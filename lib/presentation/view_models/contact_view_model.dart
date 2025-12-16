@@ -30,6 +30,7 @@ class ContactViewModel extends CommonViewModel {
         .snapshots();
   }
 
+  //TODO: GAP
   Future<bool> sendFriendRequest(String email) async {
     errorMessage = null;
     try {
