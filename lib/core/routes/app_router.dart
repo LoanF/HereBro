@@ -12,6 +12,11 @@ import 'app_routes.dart';
 
 final authNotifier = AuthNotifier(getIt<IAuthService>());
 
+final List<String> unauthenticatedRoutes = [
+  AppRoutes.login,
+  AppRoutes.register,
+];
+
 final GoRouter appRouter = GoRouter(
   refreshListenable: authNotifier,
   initialLocation: AppRoutes.login,
@@ -21,7 +26,10 @@ final GoRouter appRouter = GoRouter(
 
     // Pas connecté et pas sur la page de login
     if (!loggedIn) {
-      return loggingIn ? null : AppRoutes.login;
+      if (!unauthenticatedRoutes.contains(state.matchedLocation)) {
+        return AppRoutes.login;
+      }
+      return null;
     }
 
     // Connecté et sur la page de login

@@ -2,11 +2,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
-  static final NotificationService _instance = NotificationService._internal();
-
-  factory NotificationService() => _instance;
-
-  NotificationService._internal();
+  NotificationService() {
+    init();
+  }
 
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
@@ -19,6 +17,10 @@ class NotificationService {
     const settings = InitializationSettings(android: androidSettings);
 
     await _localNotifications.initialize(settings);
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      showNotification(message);
+    });
   }
 
   Future<void> showNotification(RemoteMessage message) async {
@@ -28,7 +30,7 @@ class NotificationService {
     const androidDetails = AndroidNotificationDetails(
       'herebro_channel',
       'HereBro Notifications',
-      channelDescription: 'Notifications de messages HereBro',
+      channelDescription: 'Notifications de HereBro',
       importance: Importance.max,
       priority: Priority.high,
     );

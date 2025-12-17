@@ -1,4 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../data/models/app_user_model.dart';
+import 'user_service.dart';
 
 abstract class IAuthService {
   Stream<User?> get authStateChanges;
@@ -7,26 +11,32 @@ abstract class IAuthService {
 
   Future<void> signOut();
 
-  Future<UserCredential> createUserWithEmailAndPassword(
-    String email,
-    String password,
-  );
+  /// Creates a new user with the provided email and password.
+  /// Throws a [FirebaseAuthException] if the operation fails.
+  /// @param email The email address of the new user. Trimmed and converted to lowercase.
+  /// @param password The password for the new user.
+  Future<void> createUserWithEmailAndPassword(String email, String password);
 
   User? get currentUser;
 }
 
-class FirebaseAuthService implements IAuthService {
+class AuthService implements IAuthService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final IAppUserService _appUserService;
+
+  AuthService(this._appUserService);
 
   @override
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
   @override
   Future<void> signInWithEmail(String email, String password) async {
+    email = email.trim().toLowerCase();
     await _firebaseAuth.signInWithEmailAndPassword(
-      email: email.trim().toLowerCase(),
+      email: email,
       password: password.trim(),
     );
+    _appUserService.updateUser(_appUserService.currentAppUser!);
   }
 
   @override
@@ -35,14 +45,28 @@ class FirebaseAuthService implements IAuthService {
   }
 
   @override
-  Future<UserCredential> createUserWithEmailAndPassword(
+  Future<void> createUserWithEmailAndPassword(
     String email,
     String password,
   ) async {
-    return await _firebaseAuth.createUserWithEmailAndPassword(
-      email: email.trim().toLowerCase(),
-      password: password.trim(),
+    email = email.trim().toLowerCase();
+    final UserCredential cred = await _firebaseAuth
+        .createUserWithEmailAndPassword(
+          email: email,
+          password: password.trim(),
+        );
+
+    if (cred.user == null) return;
+    final user = AppUser(
+      uid: cred.user!.uid,
+      displayName: cred.user!.displayName ?? '',
+      email: email,
+      photoURL: cred.user!.photoURL ?? '',
+      position: null,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
     );
+    _appUserService.createUser(user);
   }
 
   @override

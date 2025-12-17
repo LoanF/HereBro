@@ -4,7 +4,7 @@ import * as admin from "firebase-admin";
 admin.initializeApp();
 
 export const onFriendRequestCreated = functions.firestore
-  .document("users/{targetUid}/friendRequests/{senderUid}")
+  .document("users/{targetUid}/friend_requests/{senderUid}")
   .onCreate(async (snapshot, context) => {
     const {targetUid, senderUid} = context.params;
 

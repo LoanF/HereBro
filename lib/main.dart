@@ -14,6 +14,10 @@ import 'presentation/view_models/contact_view_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseMessaging.instance.requestPermission(
@@ -21,18 +25,6 @@ void main() async {
     badge: true,
     sound: true,
   );
-  final token = await FirebaseMessaging.instance.getToken();
-  final notificationService = NotificationService();
-  await notificationService.init();
-
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    notificationService.showNotification(message);
-  });
-
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   configureDependencies();

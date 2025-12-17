@@ -1,14 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/di.dart';
-import '../../core/enums/firestore_collection_enum.dart';
 import '../../core/services/auth_service.dart';
+import '../../data/enums/firestore_collection_enum.dart';
 import 'common_view_model.dart';
 
 class ContactViewModel extends CommonViewModel {
   final IAuthService _auth = getIt<IAuthService>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  /// Get a stream of the current user's contacts from Firestore.
   Stream<QuerySnapshot> getContactsStream() {
     final user = _auth.currentUser;
     if (user == null) return const Stream.empty();
@@ -20,6 +21,7 @@ class ContactViewModel extends CommonViewModel {
         .snapshots();
   }
 
+  /// Get a stream of the current user's friend requests from Firestore.
   Stream<QuerySnapshot> getRequestsStream() {
     final user = _auth.currentUser;
     if (user == null) return const Stream.empty();
@@ -30,9 +32,10 @@ class ContactViewModel extends CommonViewModel {
         .snapshots();
   }
 
-  //TODO: GAP
+  /// Send a friend request to a user identified by their email.
   Future<bool> sendFriendRequest(String email) async {
-    errorMessage = null;
+    isLoading = true;
+
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) throw Exception("Non connecté");
@@ -76,7 +79,7 @@ class ContactViewModel extends CommonViewModel {
           .doc(targetUid)
           .collection(FirestoreCollection.friendRequests.value)
           .doc(currentUser.uid)
-          .set({
+          .update({
             'uid': currentUser.uid,
             'displayName': currentUser.displayName ?? 'Inconnu',
             'photoURL': currentUser.photoURL,
@@ -84,10 +87,10 @@ class ContactViewModel extends CommonViewModel {
             'timestamp': FieldValue.serverTimestamp(),
           });
 
+      isLoading = false;
       return true;
     } catch (e) {
       errorMessage = e.toString().replaceAll("Exception: ", "");
-      notifyListeners();
       return false;
     }
   }
