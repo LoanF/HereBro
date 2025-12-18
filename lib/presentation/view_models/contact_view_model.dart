@@ -84,6 +84,20 @@ class ContactViewModel extends CommonViewModel {
 
       if (pendingRequest.exists) throw Exception("Demande déjà envoyée.");
 
+      // Si demande entrante existante, l'accepter automatiquement
+      final incomingRequest = await _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(currentUser.uid)
+          .collection(FirestoreCollection.friendRequests.value)
+          .doc(targetUid)
+          .get();
+
+      if (incomingRequest.exists) {
+        await acceptFriendRequest(targetUid, incomingRequest.data()!);
+        isLoading = false;
+        return true;
+      }
+
       await _firestore
           .collection(FirestoreCollection.users.value)
           .doc(targetUid)
@@ -123,6 +137,7 @@ class ContactViewModel extends CommonViewModel {
     batch.set(senderRef, {
       'uid': currentUser.uid,
       'displayName': currentUser.displayName,
+      'email': currentUser.email,
       'photoURL': currentUser.photoURL,
       'addedAt': FieldValue.serverTimestamp(),
     });
@@ -136,6 +151,7 @@ class ContactViewModel extends CommonViewModel {
     batch.set(myContactRef, {
       'uid': senderUid,
       'displayName': senderData['displayName'],
+      'email': senderData['email'],
       'photoURL': senderData['photoURL'],
       'addedAt': FieldValue.serverTimestamp(),
     });
@@ -176,6 +192,7 @@ class ContactViewModel extends CommonViewModel {
           .set({
             'uid': currentUser.uid,
             'displayName': currentUser.displayName ?? 'Inconnu',
+            'email': currentUser.email,
             'photoURL': currentUser.photoURL,
             'timestamp': FieldValue.serverTimestamp(),
           });
@@ -211,6 +228,7 @@ class ContactViewModel extends CommonViewModel {
     batch.set(trackingRef, {
       'uid': currentUser.uid,
       'displayName': currentUser.displayName,
+      'email': currentUser.email,
       'photoURL': currentUser.photoURL,
       'timestamp': FieldValue.serverTimestamp(),
     });
@@ -264,9 +282,7 @@ class ContactViewModel extends CommonViewModel {
     await _firestore
         .collection(FirestoreCollection.users.value)
         .doc(currentUser.uid)
-        .collection(
-          FirestoreCollection.locationRequests.value,
-        ) // On supprime de la bonne table
+        .collection(FirestoreCollection.locationRequests.value)
         .doc(senderUid)
         .delete();
   }

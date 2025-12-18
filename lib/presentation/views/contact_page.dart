@@ -306,7 +306,7 @@ class _ContactPageState extends State<ContactPage> {
                               }
                             },
                             icon: const Icon(
-                              Icons.delete,
+                              Icons.delete_outline,
                               color: AppColors.error,
                             ),
                           ),
@@ -377,9 +377,16 @@ class _ContactPageState extends State<ContactPage> {
     ContactViewModel viewModel,
   ) {
     final uid = request['uid'];
-    final name = request['displayName'] ?? "Inconnu";
+    String name = request['displayName'] ?? "";
     final photo = request['photoURL'];
     final type = request['localType'];
+
+    if (name.isEmpty) {
+      name = request['email'] ?? "";
+      if (name.isEmpty) {
+        name = "Inconnu";
+      }
+    }
 
     String subtitle;
     IconData typeIcon;
