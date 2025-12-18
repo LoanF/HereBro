@@ -15,6 +15,7 @@ class HomeViewModel extends CommonViewModel {
   final IAuthService _auth = getIt<IAuthService>();
   final ISelfieService _selfie = getIt<ISelfieService>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final double _desiredAccuracyMeters = 30.0;
 
   LatLng? _currentPosition;
 
@@ -75,7 +76,6 @@ class HomeViewModel extends CommonViewModel {
       if (!serviceEnabled) {
         await Future.delayed(const Duration(milliseconds: 500));
         serviceEnabled = await Geolocator.isLocationServiceEnabled();
-
         if (!serviceEnabled) {
           errorMessage = "Le service de localisation est désactivé.";
           return;
@@ -97,8 +97,32 @@ class HomeViewModel extends CommonViewModel {
         return;
       }
 
-      Position? position = await Geolocator.getLastKnownPosition();
-      position ??= await Geolocator.getCurrentPosition();
+      // Request a high-precision single position first
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.bestForNavigation,
+          timeLimit: const Duration(seconds: 10),
+        );
+      } catch (_) {
+        // fallback to last known or less demanding call
+        position =
+            await Geolocator.getLastKnownPosition() ??
+            await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.high,
+            );
+      }
+
+      // Check precision: if accuracy is too large, prompt user to enable precise location
+      if (position.accuracy > _desiredAccuracyMeters) {
+        errorMessage =
+            "Localisation approximative (${position.accuracy.toStringAsFixed(0)} m). Activez la localisation précise pour cette application.";
+        // open app settings so user can toggle precise location (Android shows chooser)
+        try {
+          await Geolocator.openAppSettings();
+        } catch (_) {}
+        return;
+      }
 
       _currentPosition = LatLng(position.latitude, position.longitude);
 
@@ -119,11 +143,22 @@ class HomeViewModel extends CommonViewModel {
       _gpsSubscription =
           Geolocator.getPositionStream(
             locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.high,
+              accuracy: LocationAccuracy.bestForNavigation,
               distanceFilter: 2,
             ),
           ).listen(
-            (Position newPos) {
+            (Position newPos) async {
+              // check stream positions accuracy too
+              if (newPos.accuracy > _desiredAccuracyMeters) {
+                errorMessage =
+                    "Localisation approximative (${newPos.accuracy.toStringAsFixed(0)} m). Activez la localisation précise.";
+                // optionally open settings once
+                try {
+                  await Geolocator.openAppSettings();
+                } catch (_) {}
+                return;
+              }
+
               _currentPosition = LatLng(newPos.latitude, newPos.longitude);
               errorMessage = null;
 
@@ -149,15 +184,12 @@ class HomeViewModel extends CommonViewModel {
             },
             onError: (Object error) {
               errorMessage = "Signal GPS perdu ou interrompu.";
-              isLoading = false;
-
               Future.delayed(const Duration(seconds: 5), () => retryLocation());
             },
             cancelOnError: false,
           );
     } catch (e) {
       errorMessage = "Erreur GPS: $e";
-      isLoading = false;
     }
   }
 

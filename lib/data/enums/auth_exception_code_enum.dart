@@ -11,9 +11,9 @@ enum AuthExceptionCode {
     'invalid-credential',
     'L\'adresse email ou le mot de passe est incorrect.',
   ),
-  channelError(
-    'channel-error',
-    'Veuillez spécifier un email et un mot de passe.',
+  requiresRecentLogin(
+    'requires-recent-login',
+    'Veuillez vous déconnecter et reconnecter.',
   );
 
   const AuthExceptionCode(this.code, this.message);

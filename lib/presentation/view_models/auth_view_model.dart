@@ -108,4 +108,15 @@ class AuthViewModel extends CommonViewModel {
       return false;
     }
   }
+
+  Future<void> deleteAccount() async {
+    isLoading = true;
+    try {
+      await _auth.deleteAccount();
+    } on FirebaseAuthException catch (e) {
+      errorMessage = AuthExceptionCode.getMessageFromCode(e.code);
+    } catch (e) {
+      errorMessage = "Une erreur est survenue";
+    }
+  }
 }

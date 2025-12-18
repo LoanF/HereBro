@@ -13,6 +13,8 @@ abstract class IAppUserService {
 
   Future<AppUser> updateFcmToken(AppUser appUser);
 
+  Future<void> deleteUserData(String uid);
+
   AppUser? get currentAppUser;
 }
 
@@ -73,6 +75,11 @@ class AppUserService implements IAppUserService {
       updatedAt: appUser.updatedAt,
       fcmToken: fcmToken,
     );
+  }
+
+  @override
+  Future<void> deleteUserData(String uid) async {
+    await usersCollection.doc(uid).delete();
   }
 
   @override

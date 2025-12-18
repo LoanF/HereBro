@@ -11,6 +11,8 @@ abstract class IAuthService {
 
   Future<void> signOut();
 
+  Future<void> deleteAccount();
+
   /// Creates a new user with the provided email and password.
   /// Throws a [FirebaseAuthException] if the operation fails.
   /// @param email The email address of the new user. Trimmed and converted to lowercase.
@@ -67,6 +69,16 @@ class AuthService implements IAuthService {
       updatedAt: Timestamp.now(),
     );
     _appUserService.createUser(user);
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    final User? user = _firebaseAuth.currentUser;
+    if (user == null) return;
+    final String uid = user.uid;
+    await user.delete();
+
+    await _appUserService.deleteUserData(uid);
   }
 
   @override

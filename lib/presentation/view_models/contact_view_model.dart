@@ -379,6 +379,6 @@ class ContactViewModel extends CommonViewModel {
     await refuseFriendRequest(friendUid);
     await refuseLocationRequest(friendUid);
 
-    isLoading = true;
+    isLoading = false;
   }
 }

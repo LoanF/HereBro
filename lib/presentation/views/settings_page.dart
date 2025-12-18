@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/routes/app_routes.dart';
+import '../../core/themes/app_colors.dart';
 import '../view_models/auth_view_model.dart';
 import '../view_models/home_view_model.dart';
 
@@ -53,7 +54,17 @@ class _SettingsPageState extends State<SettingsPage> {
     final user = viewModel.currentUser;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Mon profil"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("Mon profil"),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              viewModel.deleteAccount();
+            },
+            icon: const Icon(Icons.delete_outline, color: AppColors.error),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
