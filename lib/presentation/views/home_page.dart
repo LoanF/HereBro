@@ -6,6 +6,8 @@ import 'package:latlong2/latlong.dart' hide Path;
 import 'package:provider/provider.dart';
 
 import '../../core/routes/app_routes.dart';
+import '../../core/themes/app_colors.dart';
+import '../../data/models/friend_location_model.dart';
 import '../view_models/home_view_model.dart';
 
 class HomePage extends StatefulWidget {
@@ -90,12 +92,7 @@ class _HomePageState extends State<HomePage> {
                     ),
 
                   ...homeViewModel.friends.map((friend) {
-                    return _buildFriendMarker(
-                      friend.uid,
-                      friend.position,
-                      friend.displayName,
-                      friend.photoUrl,
-                    );
+                    return _buildFriendMarker(friend);
                   }),
                 ],
               ),
@@ -195,18 +192,24 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Marker _buildFriendMarker(
-    String uid,
-    LatLng position,
-    String name,
-    String? photoUrl,
-  ) {
+  Marker _buildFriendMarker(FriendLocation friend) {
+    String? imageUrl = friend.selfieUrl ?? friend.photoUrl;
+    if (imageUrl == null || imageUrl.isEmpty) {
+      imageUrl = null;
+    }
+
+    String name = friend.displayName;
+    if (name.isEmpty) {
+      name = friend.email;
+    }
+
     return Marker(
-      point: position,
+      point: friend.position,
       width: 50,
       height: 50,
       child: GestureDetector(
-        onTap: () => _showFriendInfo(context, name, photoUrl),
+        onTap: () =>
+            _showFriendInfo(context, name, friend.photoUrl, friend.selfieUrl),
         child: Column(
           children: [
             Container(
@@ -219,11 +222,13 @@ class _HomePageState extends State<HomePage> {
               ),
               child: CircleAvatar(
                 radius: 18,
-                backgroundImage: photoUrl != null
-                    ? NetworkImage(photoUrl)
+                backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                    ? NetworkImage(imageUrl)
                     : null,
                 backgroundColor: Colors.green,
-                child: photoUrl == null ? Text(name[0]) : null,
+                child: imageUrl == null || imageUrl.isEmpty
+                    ? Text(name[0])
+                    : null,
               ),
             ),
             ClipPath(
@@ -261,40 +266,127 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showFriendInfo(BuildContext context, String name, String? photoUrl) {
+  void _showFriendInfo(
+    BuildContext context,
+    String name,
+    String? photoUrl,
+    String? selfieUrl,
+  ) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // allow full-height sheet
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => SafeArea(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundImage: photoUrl != null
-                    ? NetworkImage(photoUrl)
-                    : null,
-                child: photoUrl == null
-                    ? Text(name[0], style: const TextStyle(fontSize: 24))
-                    : null,
+      builder: (context) {
+        final mq = MediaQuery.of(context);
+
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppColors.secondaryBackground,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              const SizedBox(width: 16),
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  16,
+                  24,
+                  mq.viewInsets.bottom + 24,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage:
+                              photoUrl != null && photoUrl.isNotEmpty
+                              ? NetworkImage(photoUrl)
+                              : null,
+                          child: photoUrl == null || photoUrl.isEmpty
+                              ? Text(
+                                  name[0],
+                                  style: const TextStyle(fontSize: 24),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (selfieUrl != null && selfieUrl.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 12),
+                      // Constrain image height but allow zoom/scroll
+                      SizedBox(
+                        height: mq.size.height * 0.6,
+                        width: double.infinity,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: InteractiveViewer(
+                            panEnabled: true,
+                            scaleEnabled: true,
+                            child: Image.network(
+                              selfieUrl,
+                              fit: BoxFit.contain,
+                              width: double.infinity,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return SizedBox(
+                                  height: mq.size.height * 0.4,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stack) => SizedBox(
+                                height: mq.size.height * 0.3,
+                                child: const Center(
+                                  child: Icon(Icons.broken_image, size: 48),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 }

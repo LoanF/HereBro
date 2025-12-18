@@ -182,8 +182,6 @@ class HomeViewModel extends CommonViewModel {
               user.uid,
             );
 
-            print("Selfie URL for $friendUid: $selfieUrl");
-
             final sub = _firestore
                 .collection(FirestoreCollection.users.value)
                 .doc(friendUid)
@@ -199,6 +197,7 @@ class HomeViewModel extends CommonViewModel {
                       uid: friendUid,
                       position: LatLng(pos['lat'], pos['lng']),
                       displayName: userData['displayName'] ?? 'Contact',
+                      email: userData['email'] ?? '',
                       photoUrl: userData['photoURL'],
                       selfieUrl: selfieUrl,
                     );

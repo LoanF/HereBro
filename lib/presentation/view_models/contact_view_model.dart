@@ -208,14 +208,12 @@ class ContactViewModel extends CommonViewModel {
     }
   }
 
-  Future<String> captureSelfieForLocationRequest(String senderUid) async {
+  Future<void> captureSelfieForLocationRequest(String senderUid) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) throw Exception("Non connecté");
 
     final selfieUrl = await _selfie.captureSelfie(currentUser.uid, senderUid);
     if (selfieUrl == null) throw Exception("Échec de la capture du selfie");
-
-    return selfieUrl;
   }
 
   Future<void> acceptLocationRequest(
@@ -225,13 +223,6 @@ class ContactViewModel extends CommonViewModel {
   ]) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
-
-    if (withSelfie) {
-      final selfieUrl = await captureSelfieForLocationRequest(senderUid);
-      requestData['selfieUrl'] = selfieUrl;
-    } else {
-      _selfie.deleteCapture(currentUser.uid, senderUid);
-    }
 
     final batch = _firestore.batch();
 
@@ -253,7 +244,6 @@ class ContactViewModel extends CommonViewModel {
       'email': currentUser.email,
       'photoURL': currentUser.photoURL,
       'timestamp': FieldValue.serverTimestamp(),
-      'selfieURL': requestData['selfieUrl'],
     });
 
     final sharedWithRef = _firestore
@@ -267,6 +257,12 @@ class ContactViewModel extends CommonViewModel {
     });
 
     await batch.commit();
+
+    if (withSelfie) {
+      await captureSelfieForLocationRequest(senderUid);
+    } else {
+      _selfie.deleteCapture(currentUser.uid, senderUid);
+    }
   }
 
   Future<bool> stopSharingLocation(String friendUid) async {
@@ -365,5 +361,24 @@ class ContactViewModel extends CommonViewModel {
         .collection(FirestoreCollection.contacts.value)
         .doc(currentUser.uid)
         .delete();
+
+    // Suppression du tracking et du partage de localisation
+    await stopSharingLocation(friendUid);
+    await _firestore
+        .collection(FirestoreCollection.users.value)
+        .doc(currentUser.uid)
+        .collection(FirestoreCollection.tracking.value)
+        .doc(friendUid)
+        .delete();
+
+    // Suppression des selfies associés
+    _selfie.deleteCapture(currentUser.uid, friendUid);
+    _selfie.deleteCapture(friendUid, currentUser.uid);
+
+    // Suppression des demandes en attente
+    await refuseFriendRequest(friendUid);
+    await refuseLocationRequest(friendUid);
+
+    isLoading = true;
   }
 }
