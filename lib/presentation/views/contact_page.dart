@@ -17,10 +17,9 @@ class ContactPage extends StatefulWidget {
 
 class _ContactPageState extends State<ContactPage> {
   int _selectedIndex = 0;
+  final emailController = TextEditingController();
 
   void _showAddDialog(BuildContext context) {
-    final emailController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -208,17 +207,25 @@ class _ContactPageState extends State<ContactPage> {
                       .doc(friendUid)
                       .snapshots(),
                   builder: (context, userSnapshot) {
-                    String displayName = contactDoc['displayName'] ?? "Inconnu";
-                    if (displayName.isEmpty) {
-                      displayName = "Inconnu";
-                    }
-                    String? photoURL = contactDoc['photoURL'];
+                    String displayName = contactDoc['displayName'] ?? "";
+                    String? photoURL = contactDoc['photoURL'] ?? "";
 
                     if (userSnapshot.hasData && userSnapshot.data!.exists) {
                       final data =
                           userSnapshot.data!.data() as Map<String, dynamic>;
                       displayName = data['displayName'] ?? displayName;
                       photoURL = data['photoURL'] ?? photoURL;
+                      if (displayName.isEmpty) {
+                        displayName = data['email'] ?? displayName;
+                      }
+                    }
+
+                    if (displayName.isEmpty) {
+                      displayName = "Inconnu";
+                    }
+
+                    if (photoURL!.isEmpty) {
+                      photoURL = null;
                     }
 
                     return ListTile(
@@ -283,7 +290,7 @@ class _ContactPageState extends State<ContactPage> {
                           IconButton(
                             statesController: WidgetStatesController(
                               viewModel.isLoading
-                                  ? {WidgetState.pressed}
+                                  ? {WidgetState.disabled}
                                   : null,
                             ),
                             onPressed: () async {

@@ -179,25 +179,18 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-
-          Positioned(
-            bottom: 20,
-            right: 0,
-            child: SafeArea(
-              minimum: const EdgeInsets.only(bottom: 30, right: 20),
-              child: FloatingActionButton(
-                heroTag: "recenter",
-                child: const Icon(Icons.my_location),
-                onPressed: () {
-                  if (homeViewModel.currentPosition != null) {
-                    _mapController.move(homeViewModel.currentPosition!, 16);
-                    _mapController.rotate(0.0);
-                  }
-                },
-              ),
-            ),
-          ),
         ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton(
+        heroTag: "recenter",
+        child: const Icon(Icons.my_location),
+        onPressed: () {
+          if (homeViewModel.currentPosition != null) {
+            _mapController.move(homeViewModel.currentPosition!, 16);
+            _mapController.rotate(0.0);
+          }
+        },
       ),
     );
   }
