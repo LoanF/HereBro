@@ -59,7 +59,21 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           IconButton(
             onPressed: () async {
-              viewModel.deleteAccount();
+              await viewModel.deleteAccount();
+              if (context.mounted) {
+                if (viewModel.errorMessage != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(viewModel.errorMessage!)),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Suppression du compte avec succès"),
+                    ),
+                  );
+                }
+                context.go(AppRoutes.home);
+              }
             },
             icon: const Icon(Icons.delete_outline, color: AppColors.error),
           ),
