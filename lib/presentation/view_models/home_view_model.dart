@@ -178,9 +178,12 @@ class HomeViewModel extends CommonViewModel {
             if (_friendsData.containsKey(friendUid)) continue;
 
             final String? selfieUrl = await _selfie.getSelfieUrl(
-              user.uid,
               friendUid,
+              user.uid,
             );
+
+            print("Selfie URL for $friendUid: $selfieUrl");
+
             final sub = _firestore
                 .collection(FirestoreCollection.users.value)
                 .doc(friendUid)
@@ -195,8 +198,9 @@ class HomeViewModel extends CommonViewModel {
                     _friendsData[friendUid] = FriendLocation(
                       uid: friendUid,
                       position: LatLng(pos['lat'], pos['lng']),
-                      displayName: userData['displayName'] ?? 'Ami',
-                      photoURL: selfieUrl ?? userData['photoURL'],
+                      displayName: userData['displayName'] ?? 'Contact',
+                      photoUrl: userData['photoURL'],
+                      selfieUrl: selfieUrl,
                     );
 
                     notifyListeners();

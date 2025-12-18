@@ -94,7 +94,7 @@ class _HomePageState extends State<HomePage> {
                       friend.uid,
                       friend.position,
                       friend.displayName,
-                      friend.photoURL,
+                      friend.photoUrl,
                     );
                   }),
                 ],

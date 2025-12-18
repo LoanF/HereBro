@@ -142,6 +142,7 @@ class ContactViewModel extends CommonViewModel {
       'email': currentUser.email,
       'photoURL': currentUser.photoURL,
       'addedAt': FieldValue.serverTimestamp(),
+      'isSender': false,
     });
 
     final myContactRef = _firestore
@@ -156,6 +157,7 @@ class ContactViewModel extends CommonViewModel {
       'email': senderData['email'],
       'photoURL': senderData['photoURL'],
       'addedAt': FieldValue.serverTimestamp(),
+      'isSender': true,
     });
 
     final requestRef = _firestore
