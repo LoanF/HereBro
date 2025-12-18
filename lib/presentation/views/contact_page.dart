@@ -1,9 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/routes/app_routes.dart';
 import '../../core/themes/app_colors.dart';
 import '../../data/enums/firestore_collection_enum.dart';
 import '../view_models/contact_view_model.dart';
@@ -96,15 +94,15 @@ class _ContactPageState extends State<ContactPage> {
       appBar: AppBar(
         title: const Text("Contacts"),
         centerTitle: false,
-        actions: [
-          IconButton(
-            statesController: WidgetStatesController({WidgetState.disabled}),
-            icon: const Icon(Icons.playlist_add),
-            onPressed: () {
-              context.go(AppRoutes.contactRequests);
-            },
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     statesController: WidgetStatesController({WidgetState.disabled}),
+        //     icon: const Icon(Icons.playlist_add),
+        //     onPressed: () {
+        //       context.push(AppRoutes.contactRequests);
+        //     },
+        //   ),
+        // ],
       ),
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton.extended(
