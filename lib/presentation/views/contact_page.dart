@@ -633,7 +633,10 @@ class _ContactPageState extends State<ContactPage> {
               const Divider(),
 
               ListTile(
-                leading: const Icon(Icons.close, color: Colors.red),
+                leading: const Icon(
+                  Icons.camera_front_outlined,
+                  color: Colors.blue,
+                ),
                 title: const Text("Partager ma position et prendre une photo"),
                 onTap: () async {
                   Navigator.pop(ctx);
