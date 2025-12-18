@@ -17,7 +17,12 @@ class NotificationService {
     const settings = InitializationSettings(android: androidSettings);
 
     await _localNotifications.initialize(settings);
-
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'herebro_channel',
+      'HereBro Notifications',
+      description: 'Notifications de HereBro',
+      importance: Importance.max,
+    );
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       _handleMessage(message);
     });

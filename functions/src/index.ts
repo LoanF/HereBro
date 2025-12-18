@@ -14,9 +14,13 @@ const REGION = "europe-west1";
 export const onFriendRequestCreated = onDocumentCreated(
   {
     region: REGION,
-    document: "users/{receiverUid}/friendRequests/{senderUid}",
+    document: "users/{receiverUid}/friend_requests/{senderUid}",
   },
   async (event) => {
+    console.log(
+      "TRIGGERED onFriendRequestCreated",
+      JSON.stringify(event.params)
+    );
     const {senderUid, receiverUid} = event.params;
 
     const senderDoc = await admin
@@ -50,45 +54,55 @@ export const onFriendRequestCreated = onDocumentCreated(
     });
   }
 );
-
 /**
  * Demande d’ami ACCEPTÉE
+ * → Notification envoyée UNIQUEMENT au demandeur
  */
 export const onFriendAccepted = onDocumentCreated(
   {
     region: REGION,
-    document: "users/{senderUid}/contacts/{receiverUid}",
+    document: "users/{userUid}/contacts/{friendUid}",
   },
   async (event) => {
-    const {senderUid, receiverUid} = event.params;
-
-    const senderDoc = await admin
+    const {userUid, friendUid} = event.params;
+    const requestRef = admin
       .firestore()
-      .doc(`users/${senderUid}`)
+      .doc(`users/${friendUid}/friend_requests/${userUid}`);
+
+    const requestSnap = await requestRef.get();
+
+
+    if (!requestSnap.exists) {
+      return;
+    }
+
+    const requesterDoc = await admin
+      .firestore()
+      .doc(`users/${userUid}`)
       .get();
 
-    const receiverDoc = await admin
+    const accepterDoc = await admin
       .firestore()
-      .doc(`users/${receiverUid}`)
+      .doc(`users/${friendUid}`)
       .get();
 
-    if (!senderDoc.exists || !receiverDoc.exists) return;
+    if (!requesterDoc.exists || !accepterDoc.exists) return;
 
-    const token = senderDoc.data()?.fcmToken;
+    const token = requesterDoc.data()?.fcmToken;
     if (!token) return;
 
-    const receiverName =
-      receiverDoc.data()?.displayName ?? "Un utilisateur";
+    const accepterName =
+      accepterDoc.data()?.displayName ?? "Un utilisateur";
 
     await admin.messaging().send({
       token,
       notification: {
         title: "Demande acceptée",
-        body: `${receiverName} a accepté votre demande`,
+        body: `${accepterName} a accepté votre demande d’ami`,
       },
       data: {
         type: "friend_accept",
-        uid: receiverUid,
+        uid: friendUid,
       },
     });
   }
@@ -100,9 +114,13 @@ export const onFriendAccepted = onDocumentCreated(
 export const onFriendRefused = onDocumentDeleted(
   {
     region: REGION,
-    document: "users/{receiverUid}/friendRequests/{senderUid}",
+    document: "users/{receiverUid}/friend_requests/{senderUid}",
   },
   async (event) => {
+    console.log(
+      "TRIGGERED onFriendRefused",
+      JSON.stringify(event.params)
+    );
     const {senderUid, receiverUid} = event.params;
 
     const senderDoc = await admin
