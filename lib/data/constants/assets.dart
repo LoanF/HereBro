@@ -1,3 +1,3 @@
-class AppAssets {
+abstract final class AppAssets {
   static const String logo = 'assets/images/HereBro.png';
 }

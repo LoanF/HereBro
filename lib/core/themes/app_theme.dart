@@ -42,17 +42,24 @@ class AppTheme {
         ),
         textTheme: ButtonTextTheme.primary,
       ),
-      filledButtonTheme: const FilledButtonThemeData(
+      filledButtonTheme: FilledButtonThemeData(
         style: ButtonStyle(
-          padding: WidgetStatePropertyAll(EdgeInsets.all(16)),
-          backgroundColor: WidgetStatePropertyAll<Color>(AppColors.primaryBlue),
-          foregroundColor: WidgetStatePropertyAll<Color>(AppColors.mainText),
-          shape: WidgetStatePropertyAll<RoundedRectangleBorder>(
+          padding: const WidgetStatePropertyAll(EdgeInsets.all(16)),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return AppColors.secondaryButton;
+            }
+            return AppColors.mainColor;
+          }),
+          foregroundColor: const WidgetStatePropertyAll<Color>(
+            AppColors.mainText,
+          ),
+          shape: const WidgetStatePropertyAll<RoundedRectangleBorder>(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.all(defaultRadius),
             ),
           ),
-          textStyle: WidgetStatePropertyAll<TextStyle>(
+          textStyle: const WidgetStatePropertyAll<TextStyle>(
             TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
@@ -76,6 +83,7 @@ class AppTheme {
         fillColor: AppColors.thirdBackground,
         hintStyle: TextStyle(color: AppColors.secondaryText),
         focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(defaultRadius),
           borderSide: BorderSide(color: AppColors.mainColor),
         ),
         enabledBorder: OutlineInputBorder(

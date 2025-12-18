@@ -73,7 +73,7 @@ class ContactViewModel extends CommonViewModel {
           .doc(targetUid)
           .get();
 
-      if (alreadyFriend.exists) throw Exception("Vous êtes déjà amis.");
+      if (alreadyFriend.exists) throw Exception("Vous avez déjà ce contact.");
 
       final pendingRequest = await _firestore
           .collection(FirestoreCollection.users.value)
@@ -303,5 +303,26 @@ class ContactViewModel extends CommonViewModel {
         .collection(FirestoreCollection.sharedWith.value)
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => doc.id).toList());
+  }
+
+  Future<void> removeContact(String friendUid) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    isLoading = true;
+
+    await _firestore
+        .collection(FirestoreCollection.users.value)
+        .doc(currentUser.uid)
+        .collection(FirestoreCollection.contacts.value)
+        .doc(friendUid)
+        .delete();
+
+    await _firestore
+        .collection(FirestoreCollection.users.value)
+        .doc(friendUid)
+        .collection(FirestoreCollection.contacts.value)
+        .doc(currentUser.uid)
+        .delete();
   }
 }

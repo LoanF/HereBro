@@ -48,7 +48,6 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Accueil"),
         elevation: 0,
         actions: [
           IconButton(
