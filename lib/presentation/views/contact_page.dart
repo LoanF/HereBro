@@ -2,16 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../view_models/friend_view_model.dart';
+import '../../data/enums/firestore_collection_enum.dart';
+import '../view_models/contact_view_model.dart';
 
-class FriendPage extends StatefulWidget {
-  const FriendPage({super.key});
+class ContactPage extends StatefulWidget {
+  const ContactPage({super.key});
 
   @override
-  State<FriendPage> createState() => _FriendPageState();
+  State<ContactPage> createState() => _ContactPageState();
 }
 
-class _FriendPageState extends State<FriendPage> {
+class _ContactPageState extends State<ContactPage> {
   int _selectedIndex = 0;
 
   void _showAddDialog(BuildContext context) {
@@ -20,7 +21,7 @@ class _FriendPageState extends State<FriendPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Ajouter un ami"),
+        title: const Text("Ajouter un contact"),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -35,7 +36,7 @@ class _FriendPageState extends State<FriendPage> {
                 autofocus: true,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  labelText: "Email de l'ami",
+                  labelText: "Email du contact",
                   hintText: "exemple@gmail.com",
                   prefixIcon: Icon(Icons.mail_outline),
                   border: OutlineInputBorder(),
@@ -59,7 +60,7 @@ class _FriendPageState extends State<FriendPage> {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
 
               final success = await context
-                  .read<FriendViewModel>()
+                  .read<ContactViewModel>()
                   .sendFriendRequest(emailController.text);
 
               if (success) {
@@ -71,7 +72,7 @@ class _FriendPageState extends State<FriendPage> {
                   ),
                 );
               } else if (context.mounted) {
-                final error = context.read<FriendViewModel>().errorMessage;
+                final error = context.read<ContactViewModel>().errorMessage;
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text(error ?? "Erreur"),
@@ -90,7 +91,7 @@ class _FriendPageState extends State<FriendPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Communauté"), centerTitle: false),
+      appBar: AppBar(title: const Text("Contacts"), centerTitle: false),
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton.extended(
               onPressed: () => _showAddDialog(context),
@@ -115,15 +116,15 @@ class _FriendPageState extends State<FriendPage> {
           const NavigationDestination(
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
-            label: 'Mes Amis',
+            label: 'Mes contacts',
           ),
 
           StreamBuilder<QuerySnapshot>(
-            stream: context.read<FriendViewModel>().getFriendRequestsStream(),
+            stream: context.read<ContactViewModel>().getFriendRequestsStream(),
             builder: (context, snapshotFriends) {
               return StreamBuilder<QuerySnapshot>(
                 stream: context
-                    .read<FriendViewModel>()
+                    .read<ContactViewModel>()
                     .getLocationRequestsStream(),
                 builder: (context, snapshotLoc) {
                   int count = 0;
@@ -157,7 +158,7 @@ class _FriendPageState extends State<FriendPage> {
   }
 
   Widget _buildFriendsList(BuildContext context) {
-    final viewModel = context.read<FriendViewModel>();
+    final viewModel = context.read<ContactViewModel>();
 
     return StreamBuilder<List<String>>(
       stream: viewModel.getSharedWithIdsStream(),
@@ -171,7 +172,7 @@ class _FriendPageState extends State<FriendPage> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snapshot.data!.docs.isEmpty) {
-              return _emptyState("Aucun ami", Icons.diversity_3);
+              return _emptyState("Aucun contact", Icons.diversity_3);
             }
 
             final contacts = snapshot.data!.docs;
@@ -188,7 +189,7 @@ class _FriendPageState extends State<FriendPage> {
 
                 return StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
-                      .collection('users')
+                      .collection(FirestoreCollection.users.value)
                       .doc(friendUid)
                       .snapshots(),
                   builder: (context, userSnapshot) {
@@ -264,7 +265,7 @@ class _FriendPageState extends State<FriendPage> {
   }
 
   Widget _buildRequestsList(BuildContext context) {
-    final viewModel = context.read<FriendViewModel>();
+    final viewModel = context.read<ContactViewModel>();
 
     return StreamBuilder<QuerySnapshot>(
       stream: viewModel.getFriendRequestsStream(),
@@ -314,7 +315,7 @@ class _FriendPageState extends State<FriendPage> {
   Widget _buildRequestCard(
     BuildContext context,
     Map<String, dynamic> request,
-    FriendViewModel viewModel,
+    ContactViewModel viewModel,
   ) {
     final uid = request['uid'];
     final name = request['displayName'] ?? "Inconnu";
@@ -330,7 +331,7 @@ class _FriendPageState extends State<FriendPage> {
       typeIcon = Icons.location_on;
       iconColor = Colors.blue;
     } else {
-      subtitle = "Veut vous ajouter en ami";
+      subtitle = "Veut vous ajouter dans ses contacts";
       typeIcon = Icons.person_add;
       iconColor = Colors.orange;
     }
@@ -433,7 +434,7 @@ class _FriendPageState extends State<FriendPage> {
 
   void _showLocationMenu(
     BuildContext context,
-    FriendViewModel viewModel,
+    ContactViewModel viewModel,
     String friendUid,
     String name,
     bool isSharing,
@@ -492,7 +493,7 @@ class _FriendPageState extends State<FriendPage> {
                 const ListTile(
                   leading: Icon(Icons.info_outline, color: Colors.grey),
                   title: Text("Vous ne partagez pas votre position"),
-                  subtitle: Text("Cet ami ne peut pas vous voir"),
+                  subtitle: Text("Ce contact ne peut pas vous voir"),
                 ),
             ],
           ),

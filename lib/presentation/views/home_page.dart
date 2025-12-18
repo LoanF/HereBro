@@ -28,6 +28,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    context.read<HomeViewModel>().stopTracking();
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final homeViewModel = context.watch<HomeViewModel>();
 
@@ -97,10 +104,8 @@ class _HomePageState extends State<HomePage> {
           ),
 
           if (homeViewModel.isLoading)
-            const Positioned(
-              top: 100,
-              left: 0,
-              right: 0,
+            const Align(
+              alignment: Alignment.center,
               child: Center(
                 child: Card(
                   child: Padding(
@@ -119,50 +124,58 @@ class _HomePageState extends State<HomePage> {
             ),
 
           if (homeViewModel.errorMessage != null)
-            Positioned(
-              top: 100,
-              left: 20,
-              right: 20,
-              child: Card(
-                elevation: 4,
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.location_off,
-                        color: Colors.red,
-                        size: 40,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        homeViewModel.errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () async {
-                              await Geolocator.openLocationSettings();
-                            },
-                            child: const Text("Réglages"),
-                          ),
-                          const SizedBox(width: 16),
-                          FilledButton.icon(
-                            onPressed: () {
-                              context.read<HomeViewModel>().retryLocation();
-                            },
-                            icon: const Icon(Icons.refresh),
-                            label: const Text("Réessayer"),
-                          ),
-                        ],
-                      ),
-                    ],
+            Align(
+              alignment: Alignment.center,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Card(
+                  elevation: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.location_off,
+                          color: Colors.redAccent,
+                          size: 40,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          homeViewModel.errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.redAccent),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            FilledButton(
+                              style: const ButtonStyle(
+                                foregroundColor: WidgetStatePropertyAll(
+                                  Colors.lightBlue,
+                                ),
+                                backgroundColor: WidgetStatePropertyAll(
+                                  Colors.transparent,
+                                ),
+                              ),
+                              onPressed: () async {
+                                await Geolocator.openLocationSettings();
+                              },
+                              child: const Text("Paramètres"),
+                            ),
+                            const SizedBox(width: 16),
+                            FilledButton.icon(
+                              onPressed: () {
+                                context.read<HomeViewModel>().retryLocation();
+                              },
+                              icon: const Icon(Icons.refresh),
+                              label: const Text("Réessayer"),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

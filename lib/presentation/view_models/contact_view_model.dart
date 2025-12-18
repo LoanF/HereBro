@@ -5,7 +5,7 @@ import '../../core/services/auth_service.dart';
 import '../../data/enums/firestore_collection_enum.dart';
 import 'common_view_model.dart';
 
-class FriendViewModel extends CommonViewModel {
+class ContactViewModel extends CommonViewModel {
   final IAuthService _auth = getIt<IAuthService>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
