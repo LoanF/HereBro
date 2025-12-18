@@ -365,5 +365,24 @@ class ContactViewModel extends CommonViewModel {
         .collection(FirestoreCollection.contacts.value)
         .doc(currentUser.uid)
         .delete();
+
+    // Suppression du tracking et du partage de localisation
+    await stopSharingLocation(friendUid);
+    await _firestore
+        .collection(FirestoreCollection.users.value)
+        .doc(currentUser.uid)
+        .collection(FirestoreCollection.tracking.value)
+        .doc(friendUid)
+        .delete();
+
+    // Suppression des selfies associés
+    _selfie.deleteCapture(currentUser.uid, friendUid);
+    _selfie.deleteCapture(friendUid, currentUser.uid);
+
+    // Suppression des demandes en attente
+    await refuseFriendRequest(friendUid);
+    await refuseLocationRequest(friendUid);
+
+    isLoading = true;
   }
 }

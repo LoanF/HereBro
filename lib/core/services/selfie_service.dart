@@ -51,6 +51,7 @@ class SelfieService implements ISelfieService {
   Future<void> deleteCapture(String currentUid, String senderUid) async {
     final String fileName = 'selfies/$currentUid/$senderUid.jpg';
     final Reference ref = FirebaseStorage.instance.ref().child(fileName);
+    if ((await ref.listAll()).items.isEmpty) return;
     await ref.delete();
   }
 }
