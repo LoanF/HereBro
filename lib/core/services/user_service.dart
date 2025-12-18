@@ -7,6 +7,8 @@ import '../../data/models/app_user_model.dart';
 abstract class IAppUserService {
   Future<AppUser?> getUserById(String uid);
 
+  Future<Map<String, String>> fetchUsersEmailAndUuid(String currentUid);
+
   Future<void> createUser(AppUser user);
 
   Future<void> updateUser(AppUser user);
@@ -84,4 +86,19 @@ class AppUserService implements IAppUserService {
 
   @override
   AppUser? get currentAppUser => _currentAppUser;
+
+  @override
+  Future<Map<String, String>> fetchUsersEmailAndUuid(String currentUid) {
+    return usersCollection.get().then((querySnapshot) {
+      final Map<String, String> emailToUidMap = {};
+      for (var doc in querySnapshot.docs) {
+        final user = doc.data();
+        if (user.email.isEmpty) continue;
+        if (emailToUidMap.containsKey(user.email)) continue;
+        if (user.uid == currentUid) continue;
+        emailToUidMap[user.email] = user.uid;
+      }
+      return emailToUidMap;
+    });
+  }
 }

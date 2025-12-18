@@ -33,6 +33,10 @@ class HomeViewModel extends CommonViewModel {
   StreamSubscription<ServiceStatus>? _serviceStatusSubscription;
   final List<StreamSubscription> _individualSubscriptions = [];
 
+  String? _warningMessage;
+
+  String? get warningMessage => _warningMessage;
+
   void init() {
     if (_gpsSubscription != null) return;
 
@@ -115,13 +119,9 @@ class HomeViewModel extends CommonViewModel {
 
       // Check precision: if accuracy is too large, prompt user to enable precise location
       if (position.accuracy > _desiredAccuracyMeters) {
-        errorMessage =
-            "Localisation approximative (${position.accuracy.toStringAsFixed(0)} m). Activez la localisation précise pour cette application.";
-        // open app settings so user can toggle precise location (Android shows chooser)
-        try {
-          await Geolocator.openAppSettings();
-        } catch (_) {}
-        return;
+        _warningMessage =
+            "Loc approximative (${position.accuracy.toStringAsFixed(0)} m)";
+        notifyListeners();
       }
 
       _currentPosition = LatLng(position.latitude, position.longitude);
@@ -150,13 +150,9 @@ class HomeViewModel extends CommonViewModel {
             (Position newPos) async {
               // check stream positions accuracy too
               if (newPos.accuracy > _desiredAccuracyMeters) {
-                errorMessage =
-                    "Localisation approximative (${newPos.accuracy.toStringAsFixed(0)} m). Activez la localisation précise.";
-                // optionally open settings once
-                try {
-                  await Geolocator.openAppSettings();
-                } catch (_) {}
-                return;
+                _warningMessage =
+                    "Loc approximative (${newPos.accuracy.toStringAsFixed(0)} m)";
+                notifyListeners();
               }
 
               _currentPosition = LatLng(newPos.latitude, newPos.longitude);

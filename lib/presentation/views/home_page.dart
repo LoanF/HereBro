@@ -51,6 +51,13 @@ class _HomePageState extends State<HomePage> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         elevation: 0,
+        title: Text(
+          homeViewModel.warningMessage ?? '',
+          style: const TextStyle(
+            color: AppColors.warning,
+            fontWeight: FontWeight.normal,
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: () => context.push(AppRoutes.contact),
