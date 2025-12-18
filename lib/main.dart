@@ -25,8 +25,6 @@ void main() async {
     badge: true,
     sound: true,
   );
-
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   configureDependencies();
 
   runApp(

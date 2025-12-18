@@ -53,7 +53,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final user = viewModel.currentUser;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Mon Profil"), centerTitle: true),
+      appBar: AppBar(title: const Text("Mon profil"), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -86,8 +86,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
+            const SizedBox(height: 48),
             TextField(
               controller: _emailController,
               enabled: false,
