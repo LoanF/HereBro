@@ -54,9 +54,9 @@ export const onFriendRequestCreated = onDocumentCreated(
     });
   }
 );
+
 /**
  * Demande d’ami ACCEPTÉE
- * → Notification envoyée UNIQUEMENT au demandeur
  */
 export const onFriendAccepted = onDocumentCreated(
   {
@@ -65,14 +65,12 @@ export const onFriendAccepted = onDocumentCreated(
   },
   async (event) => {
     const {userUid, friendUid} = event.params;
-    const requestRef = admin
-      .firestore()
-      .doc(`users/${friendUid}/friend_requests/${userUid}`);
+    const data = event.data?.data();
 
-    const requestSnap = await requestRef.get();
+    if (!data) return;
 
 
-    if (!requestSnap.exists) {
+    if (data.isSender === true) {
       return;
     }
 
@@ -117,11 +115,25 @@ export const onFriendRefused = onDocumentDeleted(
     document: "users/{receiverUid}/friend_requests/{senderUid}",
   },
   async (event) => {
+    const {senderUid, receiverUid} = event.params;
+
     console.log(
       "TRIGGERED onFriendRefused",
       JSON.stringify(event.params)
     );
-    const {senderUid, receiverUid} = event.params;
+
+    const contactRef = admin
+      .firestore()
+      .doc(`users/${senderUid}/contacts/${receiverUid}`);
+
+    const contactSnap = await contactRef.get();
+
+    if (contactSnap.exists) {
+      console.log(
+        "SKIP onFriendRefused → contact already exists (accept flow)"
+      );
+      return;
+    }
 
     const senderDoc = await admin
       .firestore()
