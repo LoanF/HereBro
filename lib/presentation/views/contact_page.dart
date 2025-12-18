@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/di.dart';
+import '../../core/services/selfie_service.dart';
 import '../../core/themes/app_colors.dart';
 import '../../data/enums/firestore_collection_enum.dart';
 import '../view_models/contact_view_model.dart';
@@ -267,6 +269,7 @@ class _ContactPageState extends State<ContactPage> {
                       trailing: Row(
                         spacing: 8,
                         mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           IconButton(
                             icon: Icon(
@@ -296,6 +299,7 @@ class _ContactPageState extends State<ContactPage> {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
+                                    backgroundColor: AppColors.success,
                                     content: Text(
                                       "Contact $displayName supprimé",
                                     ),
@@ -440,6 +444,7 @@ class _ContactPageState extends State<ContactPage> {
 
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               IconButton.filledTonal(
                 style: IconButton.styleFrom(
@@ -447,11 +452,27 @@ class _ContactPageState extends State<ContactPage> {
                   foregroundColor: Colors.red,
                 ),
                 icon: const Icon(Icons.close),
-                onPressed: () {
+                onPressed: () async {
                   if (type == 'location') {
-                    viewModel.refuseLocationRequest(uid);
+                    await viewModel.refuseLocationRequest(uid);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: AppColors.success,
+                          content: Text("Demande de localisation refusée"),
+                        ),
+                      );
+                    }
                   } else {
-                    viewModel.refuseFriendRequest(uid);
+                    await viewModel.refuseFriendRequest(uid);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: AppColors.success,
+                          content: Text("Demande de contact refusée"),
+                        ),
+                      );
+                    }
                   }
                 },
               ),
@@ -462,11 +483,19 @@ class _ContactPageState extends State<ContactPage> {
                   foregroundColor: Colors.white,
                 ),
                 icon: const Icon(Icons.check),
-                onPressed: () {
+                onPressed: () async {
                   if (type == 'location') {
-                    viewModel.acceptLocationRequest(uid, request);
+                    _showAcceptLocationMenu(context, viewModel, request, uid);
                   } else {
-                    viewModel.acceptFriendRequest(uid, request);
+                    await viewModel.acceptFriendRequest(uid, request);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppColors.success,
+                          content: Text("Contact ajouté $name"),
+                        ),
+                      );
+                    }
                   }
                 },
               ),
@@ -559,6 +588,62 @@ class _ContactPageState extends State<ContactPage> {
                   title: Text("Vous ne partagez pas votre position"),
                   subtitle: Text("Ce contact ne peut pas vous voir"),
                 ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAcceptLocationMenu(
+    BuildContext context,
+    ContactViewModel viewModel,
+    Map<String, dynamic> request,
+    String friendUid,
+  ) {
+    final ISelfieService selfieService = getIt<ISelfieService>();
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.check, color: Colors.green),
+                title: const Text("Partager ma position"),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await viewModel.acceptLocationRequest(friendUid, request);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        backgroundColor: AppColors.success,
+                        content: Text("Position partagée"),
+                      ),
+                    );
+                  }
+                },
+              ),
+
+              const Divider(),
+
+              ListTile(
+                leading: const Icon(Icons.close, color: Colors.red),
+                title: const Text("Partager ma position et prendre une photo"),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await viewModel.acceptLocationRequest(
+                    friendUid,
+                    request,
+                    true,
+                  );
+                },
+              ),
             ],
           ),
         ),

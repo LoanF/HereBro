@@ -6,12 +6,14 @@ import 'package:latlong2/latlong.dart';
 
 import '../../core/di.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/selfie_service.dart';
 import '../../data/enums/firestore_collection_enum.dart';
 import '../../data/models/friend_location_model.dart';
 import 'common_view_model.dart';
 
 class HomeViewModel extends CommonViewModel {
   final IAuthService _auth = getIt<IAuthService>();
+  final ISelfieService _selfie = getIt<ISelfieService>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   LatLng? _currentPosition;
@@ -168,13 +170,17 @@ class HomeViewModel extends CommonViewModel {
         .doc(user.uid)
         .collection(FirestoreCollection.tracking.value)
         .snapshots()
-        .listen((snapshot) {
+        .listen((snapshot) async {
           for (var doc in snapshot.docs) {
             final friendData = doc.data();
             final friendUid = friendData['uid'];
 
             if (_friendsData.containsKey(friendUid)) continue;
 
+            final String? selfieUrl = await _selfie.getSelfieUrl(
+              user.uid,
+              friendUid,
+            );
             final sub = _firestore
                 .collection(FirestoreCollection.users.value)
                 .doc(friendUid)
@@ -190,7 +196,7 @@ class HomeViewModel extends CommonViewModel {
                       uid: friendUid,
                       position: LatLng(pos['lat'], pos['lng']),
                       displayName: userData['displayName'] ?? 'Ami',
-                      photoURL: userData['photoURL'],
+                      photoURL: selfieUrl ?? userData['photoURL'],
                     );
 
                     notifyListeners();
