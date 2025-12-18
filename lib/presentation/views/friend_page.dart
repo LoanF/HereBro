@@ -2,16 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../view_models/contact_view_model.dart';
+import '../view_models/friend_view_model.dart';
 
-class ContactPage extends StatefulWidget {
-  const ContactPage({super.key});
+class FriendPage extends StatefulWidget {
+  const FriendPage({super.key});
 
   @override
-  State<ContactPage> createState() => _ContactPageState();
+  State<FriendPage> createState() => _FriendPageState();
 }
 
-class _ContactPageState extends State<ContactPage> {
+class _FriendPageState extends State<FriendPage> {
   int _selectedIndex = 0;
 
   void _showAddDialog(BuildContext context) {
@@ -59,7 +59,7 @@ class _ContactPageState extends State<ContactPage> {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
 
               final success = await context
-                  .read<ContactViewModel>()
+                  .read<FriendViewModel>()
                   .sendFriendRequest(emailController.text);
 
               if (success) {
@@ -71,7 +71,7 @@ class _ContactPageState extends State<ContactPage> {
                   ),
                 );
               } else if (context.mounted) {
-                final error = context.read<ContactViewModel>().errorMessage;
+                final error = context.read<FriendViewModel>().errorMessage;
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text(error ?? "Erreur"),
@@ -119,18 +119,20 @@ class _ContactPageState extends State<ContactPage> {
           ),
 
           StreamBuilder<QuerySnapshot>(
-            stream: context.read<ContactViewModel>().getFriendRequestsStream(),
+            stream: context.read<FriendViewModel>().getFriendRequestsStream(),
             builder: (context, snapshotFriends) {
               return StreamBuilder<QuerySnapshot>(
                 stream: context
-                    .read<ContactViewModel>()
+                    .read<FriendViewModel>()
                     .getLocationRequestsStream(),
                 builder: (context, snapshotLoc) {
                   int count = 0;
-                  if (snapshotFriends.hasData)
+                  if (snapshotFriends.hasData) {
                     count += snapshotFriends.data!.docs.length;
-                  if (snapshotLoc.hasData)
+                  }
+                  if (snapshotLoc.hasData) {
                     count += snapshotLoc.data!.docs.length;
+                  }
 
                   return NavigationDestination(
                     icon: Badge(
@@ -155,7 +157,7 @@ class _ContactPageState extends State<ContactPage> {
   }
 
   Widget _buildFriendsList(BuildContext context) {
-    final viewModel = context.read<ContactViewModel>();
+    final viewModel = context.read<FriendViewModel>();
 
     return StreamBuilder<List<String>>(
       stream: viewModel.getSharedWithIdsStream(),
@@ -165,10 +167,12 @@ class _ContactPageState extends State<ContactPage> {
         return StreamBuilder<QuerySnapshot>(
           stream: viewModel.getContactsStream(),
           builder: (context, snapshot) {
-            if (!snapshot.hasData)
+            if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
-            if (snapshot.data!.docs.isEmpty)
+            }
+            if (snapshot.data!.docs.isEmpty) {
               return _emptyState("Aucun ami", Icons.diversity_3);
+            }
 
             final contacts = snapshot.data!.docs;
 
@@ -260,7 +264,7 @@ class _ContactPageState extends State<ContactPage> {
   }
 
   Widget _buildRequestsList(BuildContext context) {
-    final viewModel = context.read<ContactViewModel>();
+    final viewModel = context.read<FriendViewModel>();
 
     return StreamBuilder<QuerySnapshot>(
       stream: viewModel.getFriendRequestsStream(),
@@ -310,7 +314,7 @@ class _ContactPageState extends State<ContactPage> {
   Widget _buildRequestCard(
     BuildContext context,
     Map<String, dynamic> request,
-    ContactViewModel viewModel,
+    FriendViewModel viewModel,
   ) {
     final uid = request['uid'];
     final name = request['displayName'] ?? "Inconnu";
@@ -429,7 +433,7 @@ class _ContactPageState extends State<ContactPage> {
 
   void _showLocationMenu(
     BuildContext context,
-    ContactViewModel viewModel,
+    FriendViewModel viewModel,
     String friendUid,
     String name,
     bool isSharing,

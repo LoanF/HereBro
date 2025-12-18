@@ -1,6 +1,6 @@
 import 'package:go_router/go_router.dart';
 
-import '../../presentation/views/contact_page.dart';
+import '../../presentation/views/friend_page.dart';
 import '../../presentation/views/home_page.dart';
 import '../../presentation/views/login_page.dart';
 import '../../presentation/views/register_page.dart';
@@ -56,7 +56,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.contact,
       name: 'contact',
-      builder: (context, state) => const ContactPage(),
+      builder: (context, state) => const FriendPage(),
     ),
     GoRoute(
       path: AppRoutes.settings,
