@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class AppColors {
+abstract final class AppColors {
   static const Color white = Color(0xFFFAFAFA);
   static const Color darkWhite = Color(0xFFECECEC);
 
@@ -27,6 +27,7 @@ class AppColors {
   // Dark theme specific
   static const Color mainBackground = black;
   static const Color secondaryBackground = lightBlack;
+  static const Color thirdBackground = darkGrey;
 
   static const Color mainText = darkWhite;
   static const Color secondaryText = grey2;

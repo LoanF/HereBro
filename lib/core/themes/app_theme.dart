@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class AppTheme {
+  static const Radius defaultRadius = Radius.circular(12);
+
   static ThemeData get darkTheme {
     return ThemeData(
       brightness: Brightness.dark,
@@ -33,12 +35,41 @@ class AppTheme {
           fontWeight: FontWeight.bold,
         ),
       ),
+      buttonTheme: const ButtonThemeData(
+        buttonColor: AppColors.primaryBlue,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(defaultRadius),
+        ),
+        textTheme: ButtonTextTheme.primary,
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: ButtonStyle(
+          padding: const WidgetStatePropertyAll(EdgeInsets.all(16)),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.pressed)) {
+              return AppColors.secondaryButton;
+            }
+            return AppColors.mainColor;
+          }),
+          foregroundColor: const WidgetStatePropertyAll<Color>(
+            AppColors.mainText,
+          ),
+          shape: const WidgetStatePropertyAll<RoundedRectangleBorder>(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(defaultRadius),
+            ),
+          ),
+          textStyle: const WidgetStatePropertyAll<TextStyle>(
+            TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.secondaryButton,
           foregroundColor: AppColors.mainText,
           shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(8)),
+            borderRadius: BorderRadius.all(defaultRadius),
           ),
           textStyle: const TextStyle(fontWeight: FontWeight.bold),
         ),
@@ -47,17 +78,29 @@ class AppTheme {
         backgroundColor: AppColors.mainColor,
         foregroundColor: AppColors.black,
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: const InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.secondaryBackground,
-        hintStyle: const TextStyle(color: AppColors.secondaryText),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.grey1),
-        ),
+        fillColor: AppColors.thirdBackground,
+        hintStyle: TextStyle(color: AppColors.secondaryText),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.mainColor),
+          borderRadius: BorderRadius.all(defaultRadius),
+          borderSide: BorderSide(color: AppColors.mainColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(defaultRadius),
+          borderSide: BorderSide(color: Colors.transparent),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(defaultRadius),
+          borderSide: BorderSide(color: Colors.transparent),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(defaultRadius),
+          borderSide: BorderSide(color: AppColors.error),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.all(defaultRadius),
+          borderSide: BorderSide(color: AppColors.error),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(

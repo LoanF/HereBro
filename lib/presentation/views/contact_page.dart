@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/themes/app_colors.dart';
 import '../../data/enums/firestore_collection_enum.dart';
 import '../view_models/contact_view_model.dart';
 
@@ -14,10 +15,9 @@ class ContactPage extends StatefulWidget {
 
 class _ContactPageState extends State<ContactPage> {
   int _selectedIndex = 0;
+  final emailController = TextEditingController();
 
   void _showAddDialog(BuildContext context) {
-    final emailController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -91,7 +91,19 @@ class _ContactPageState extends State<ContactPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Contacts"), centerTitle: false),
+      appBar: AppBar(
+        title: const Text("Contacts"),
+        centerTitle: false,
+        // actions: [
+        //   IconButton(
+        //     statesController: WidgetStatesController({WidgetState.disabled}),
+        //     icon: const Icon(Icons.playlist_add),
+        //     onPressed: () {
+        //       context.push(AppRoutes.contactRequests);
+        //     },
+        //   ),
+        // ],
+      ),
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton.extended(
               onPressed: () => _showAddDialog(context),
@@ -102,7 +114,7 @@ class _ContactPageState extends State<ContactPage> {
 
       body: IndexedStack(
         index: _selectedIndex,
-        children: [_buildFriendsList(context), _buildRequestsList(context)],
+        children: [_buildContactList(context), _buildRequestsList(context)],
       ),
 
       bottomNavigationBar: NavigationBar(
@@ -146,7 +158,7 @@ class _ContactPageState extends State<ContactPage> {
                       label: Text('$count'),
                       child: const Icon(Icons.notifications),
                     ),
-                    label: 'Demandes',
+                    label: 'Demandes reçues',
                   );
                 },
               );
@@ -157,7 +169,7 @@ class _ContactPageState extends State<ContactPage> {
     );
   }
 
-  Widget _buildFriendsList(BuildContext context) {
+  Widget _buildContactList(BuildContext context) {
     final viewModel = context.read<ContactViewModel>();
 
     return StreamBuilder<List<String>>(
@@ -193,14 +205,25 @@ class _ContactPageState extends State<ContactPage> {
                       .doc(friendUid)
                       .snapshots(),
                   builder: (context, userSnapshot) {
-                    String displayName = contactDoc['displayName'] ?? "Inconnu";
-                    String? photoURL = contactDoc['photoURL'];
+                    String displayName = contactDoc['displayName'] ?? "";
+                    String? photoURL = contactDoc['photoURL'] ?? "";
 
                     if (userSnapshot.hasData && userSnapshot.data!.exists) {
                       final data =
                           userSnapshot.data!.data() as Map<String, dynamic>;
                       displayName = data['displayName'] ?? displayName;
                       photoURL = data['photoURL'] ?? photoURL;
+                      if (displayName.isEmpty) {
+                        displayName = data['email'] ?? displayName;
+                      }
+                    }
+
+                    if (displayName.isEmpty) {
+                      displayName = "Inconnu";
+                    }
+
+                    if (photoURL!.isEmpty) {
+                      photoURL = null;
                     }
 
                     return ListTile(
@@ -216,7 +239,10 @@ class _ContactPageState extends State<ContactPage> {
                               )
                             : null,
                       ),
-                      title: Text(displayName),
+                      title: Text(
+                        displayName,
+                        style: const TextStyle(color: Colors.white),
+                      ),
 
                       subtitle: isSharing
                           ? const Row(
@@ -224,13 +250,13 @@ class _ContactPageState extends State<ContactPage> {
                                 Icon(
                                   Icons.circle,
                                   size: 10,
-                                  color: Colors.green,
+                                  color: AppColors.lightGreen,
                                 ),
                                 SizedBox(width: 4),
                                 Text(
                                   "Voit votre position",
                                   style: TextStyle(
-                                    color: Colors.green,
+                                    color: AppColors.lightGreen,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -238,20 +264,51 @@ class _ContactPageState extends State<ContactPage> {
                             )
                           : null,
 
-                      trailing: IconButton(
-                        icon: Icon(
-                          isSharing
-                              ? Icons.location_on
-                              : Icons.location_on_outlined,
-                          color: isSharing ? Colors.green : Colors.blue,
-                        ),
-                        onPressed: () => _showLocationMenu(
-                          context,
-                          viewModel,
-                          friendUid,
-                          displayName,
-                          isSharing,
-                        ),
+                      trailing: Row(
+                        spacing: 8,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              isSharing
+                                  ? Icons.location_on
+                                  : Icons.location_on_outlined,
+                              color: isSharing
+                                  ? AppColors.lightGreen
+                                  : AppColors.mainColor,
+                            ),
+                            onPressed: () => _showLocationMenu(
+                              context,
+                              viewModel,
+                              friendUid,
+                              displayName,
+                              isSharing,
+                            ),
+                          ),
+                          IconButton(
+                            statesController: WidgetStatesController(
+                              viewModel.isLoading
+                                  ? {WidgetState.disabled}
+                                  : null,
+                            ),
+                            onPressed: () async {
+                              await viewModel.removeContact(friendUid);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      "Contact $displayName supprimé",
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: AppColors.error,
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -318,9 +375,16 @@ class _ContactPageState extends State<ContactPage> {
     ContactViewModel viewModel,
   ) {
     final uid = request['uid'];
-    final name = request['displayName'] ?? "Inconnu";
+    String name = request['displayName'] ?? "";
     final photo = request['photoURL'];
     final type = request['localType'];
+
+    if (name.isEmpty) {
+      name = request['email'] ?? "";
+      if (name.isEmpty) {
+        name = "Inconnu";
+      }
+    }
 
     String subtitle;
     IconData typeIcon;
