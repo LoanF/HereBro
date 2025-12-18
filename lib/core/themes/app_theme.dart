@@ -71,7 +71,10 @@ class AppTheme {
         }),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const TextStyle(color: AppColors.mainText, fontWeight: FontWeight.bold);
+            return const TextStyle(
+              color: AppColors.mainText,
+              fontWeight: FontWeight.bold,
+            );
           }
           return const TextStyle(color: AppColors.secondaryText);
         }),
