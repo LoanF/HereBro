@@ -2,11 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/di.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/selfie_service.dart';
 import '../../data/enums/firestore_collection_enum.dart';
 import 'common_view_model.dart';
 
 class ContactViewModel extends CommonViewModel {
   final IAuthService _auth = getIt<IAuthService>();
+  final ISelfieService _selfie = getIt<ISelfieService>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Get a stream of the current user's contacts from Firestore.
@@ -204,12 +206,30 @@ class ContactViewModel extends CommonViewModel {
     }
   }
 
+  Future<String> captureSelfieForLocationRequest(String senderUid) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) throw Exception("Non connecté");
+
+    final selfieUrl = await _selfie.captureSelfie(currentUser.uid, senderUid);
+    if (selfieUrl == null) throw Exception("Échec de la capture du selfie");
+
+    return selfieUrl;
+  }
+
   Future<void> acceptLocationRequest(
     String senderUid,
-    Map<String, dynamic> requestData,
-  ) async {
+    Map<String, dynamic> requestData, [
+    bool withSelfie = false,
+  ]) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
+
+    if (withSelfie) {
+      final selfieUrl = await captureSelfieForLocationRequest(senderUid);
+      requestData['selfieUrl'] = selfieUrl;
+    } else {
+      _selfie.deleteCapture(currentUser.uid, senderUid);
+    }
 
     final batch = _firestore.batch();
 
@@ -231,6 +251,7 @@ class ContactViewModel extends CommonViewModel {
       'email': currentUser.email,
       'photoURL': currentUser.photoURL,
       'timestamp': FieldValue.serverTimestamp(),
+      'selfieURL': requestData['selfieUrl'],
     });
 
     final sharedWithRef = _firestore
@@ -268,6 +289,8 @@ class ContactViewModel extends CommonViewModel {
       batch.delete(sharedWithRef);
 
       await batch.commit();
+
+      _selfie.deleteCapture(currentUser.uid, friendUid);
       return true;
     } catch (e) {
       errorMessage = e.toString();

@@ -5,6 +5,7 @@ import '../presentation/view_models/contact_view_model.dart';
 import '../presentation/view_models/home_view_model.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
+import 'services/selfie_service.dart';
 import 'services/user_service.dart';
 
 final getIt = GetIt.instance;
@@ -14,6 +15,8 @@ void configureDependencies() {
   getIt.registerLazySingleton<IAuthService>(
     () => AuthService(getIt<IAppUserService>()),
   );
+  getIt.registerFactory<ISelfieService>(() => SelfieService());
+
   getIt.registerSingleton<NotificationService>(NotificationService());
   getIt.registerSingleton<AuthViewModel>(AuthViewModel());
   getIt.registerSingleton<ContactViewModel>(ContactViewModel());
