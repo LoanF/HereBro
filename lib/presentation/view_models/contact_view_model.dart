@@ -383,6 +383,13 @@ class ContactViewModel extends CommonViewModel {
           .doc(friendUid)
           .delete();
 
+      await _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(friendUid)
+          .collection(FirestoreCollection.sharedWith.value)
+          .doc(currentUser.uid)
+          .delete();
+
       // Suppression des selfies associés
       _selfie.deleteCapture(currentUser.uid, friendUid);
       _selfie.deleteCapture(friendUid, currentUser.uid);
