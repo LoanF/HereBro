@@ -51,7 +51,7 @@ class _PhotosPageState extends State<PhotosPage> {
                     ClipRect(
                       child: ConstrainedBox(
                         constraints: BoxConstraints(
-                          maxHeight: MediaQuery.of(context).size.height * 0.5,
+                          maxHeight: MediaQuery.of(context).size.height * 0.25,
                         ),
                         child: InteractiveViewer(
                           panEnabled: true,
