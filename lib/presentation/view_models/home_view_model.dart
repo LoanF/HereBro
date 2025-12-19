@@ -199,6 +199,12 @@ class HomeViewModel extends CommonViewModel {
         .collection(FirestoreCollection.tracking.value)
         .snapshots()
         .listen((snapshot) async {
+          for (var sub in _individualSubscriptions) {
+            await sub.cancel();
+          }
+          _individualSubscriptions.clear();
+          _friendsData.clear();
+          notifyListeners();
           for (var doc in snapshot.docs) {
             final friendData = doc.data();
             final friendUid = friendData['uid'];
