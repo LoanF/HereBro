@@ -93,6 +93,7 @@ class AppUserService implements IAppUserService {
   @override
   Future<void> deleteUserData(String uid) async {
     await usersCollection.doc(uid).delete();
+    _currentAppUser = null;
   }
 
   @override

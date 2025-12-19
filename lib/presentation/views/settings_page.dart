@@ -233,30 +233,36 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: viewModel.isLoading
+                ? null
+                : () => Navigator.pop(context),
             child: const Text("Annuler"),
           ),
           TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-
-              await viewModel.deleteAccount();
-              if (context.mounted) {
-                if (viewModel.errorMessage != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(viewModel.errorMessage!)),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Suppression du compte avec succès"),
-                    ),
-                  );
-                }
-                context.go(AppRoutes.home);
-              }
-            },
-            child: const Text("Supprimer", style: TextStyle(color: Colors.red)),
+            onPressed: viewModel.isLoading
+                ? null
+                : () async {
+                    await viewModel.deleteAccount();
+                    if (context.mounted) {
+                      if (viewModel.errorMessage != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(viewModel.errorMessage!)),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Suppression du compte avec succès"),
+                          ),
+                        );
+                      }
+                      Navigator.pop(context);
+                      context.go(AppRoutes.login);
+                    }
+                  },
+            child: Text(
+              viewModel.isLoading ? "Suppression" : "Supprimer",
+              style: const TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
