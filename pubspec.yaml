@@ -39,3 +39,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/HereBro.png
+    - assets/images/icon_herebro.png
