@@ -39,15 +39,16 @@ class AppUser {
   }
 
   Map<String, dynamic> toJson() {
+    // Omit field if value null
     return {
       'uid': uid,
       'displayName': displayName,
       'email': email,
-      'photoURL': photoURL,
-      'position': position?.toJson(),
+      if (photoURL != null) 'photoURL': photoURL,
+      if (position != null) 'position': position!.toJson(),
       'createdAt': createdAt,
-      'updatedAt': Timestamp.now(),
-      'fcmToken': fcmToken,
+      'updatedAt': updatedAt,
+      if (fcmToken != null) 'fcmToken': fcmToken,
     };
   }
 

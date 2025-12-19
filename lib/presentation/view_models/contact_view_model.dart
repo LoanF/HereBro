@@ -223,6 +223,13 @@ class ContactViewModel extends CommonViewModel {
   ]) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
+    isLoading = true;
+
+    if (withSelfie) {
+      await captureSelfieForLocationRequest(senderUid);
+    } else {
+      await _selfie.deleteCapture(currentUser.uid, senderUid);
+    }
 
     final batch = _firestore.batch();
 
@@ -257,12 +264,6 @@ class ContactViewModel extends CommonViewModel {
     });
 
     await batch.commit();
-
-    if (withSelfie) {
-      await captureSelfieForLocationRequest(senderUid);
-    } else {
-      _selfie.deleteCapture(currentUser.uid, senderUid);
-    }
   }
 
   Future<bool> stopSharingLocation(String friendUid) async {
@@ -288,7 +289,7 @@ class ContactViewModel extends CommonViewModel {
 
       await batch.commit();
 
-      _selfie.deleteCapture(currentUser.uid, friendUid);
+      await _selfie.deleteCapture(currentUser.uid, friendUid);
       return true;
     } catch (e) {
       errorMessage = e.toString();

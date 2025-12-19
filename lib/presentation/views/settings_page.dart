@@ -58,23 +58,7 @@ class _SettingsPageState extends State<SettingsPage> {
         title: const Text("Mon profil"),
         actions: [
           IconButton(
-            onPressed: () async {
-              await viewModel.deleteAccount();
-              if (context.mounted) {
-                if (viewModel.errorMessage != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(viewModel.errorMessage!)),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Suppression du compte avec succès"),
-                    ),
-                  );
-                }
-                context.go(AppRoutes.home);
-              }
-            },
+            onPressed: () => _showConfirmDelete(context, viewModel),
             icon: const Icon(Icons.delete_outline, color: AppColors.error),
           ),
         ],
@@ -235,6 +219,46 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showConfirmDelete(BuildContext context, AuthViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirmer la suppression"),
+        content: const Text(
+          "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Annuler"),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              await viewModel.deleteAccount();
+              if (context.mounted) {
+                if (viewModel.errorMessage != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(viewModel.errorMessage!)),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Suppression du compte avec succès"),
+                    ),
+                  );
+                }
+                context.go(AppRoutes.home);
+              }
+            },
+            child: const Text("Supprimer", style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

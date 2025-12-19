@@ -59,7 +59,6 @@ class AuthViewModel extends CommonViewModel {
     File? newImageFile,
   }) async {
     isLoading = true;
-    errorMessage = null;
 
     try {
       final user = _auth.currentUser;
@@ -103,7 +102,6 @@ class AuthViewModel extends CommonViewModel {
       isLoading = false;
       return true;
     } catch (e) {
-      isLoading = false;
       errorMessage = "Erreur mise à jour : $e";
       return false;
     }
@@ -113,6 +111,7 @@ class AuthViewModel extends CommonViewModel {
     isLoading = true;
     try {
       await _auth.deleteAccount();
+      isLoading = false;
     } on FirebaseAuthException catch (e) {
       errorMessage = AuthExceptionCode.getMessageFromCode(e.code);
     } catch (e) {
