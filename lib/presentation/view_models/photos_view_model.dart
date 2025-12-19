@@ -39,6 +39,7 @@ class PhotosViewModel extends CommonViewModel {
           ),
         );
       }
+      print(photos);
       return photos;
     } catch (e) {
       // errorMessage = 'Erreur lors de la récupération des photos partagées.';

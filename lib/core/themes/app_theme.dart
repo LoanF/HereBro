@@ -1,126 +1,107 @@
 import 'package:flutter/material.dart';
-
 import 'app_colors.dart';
 
 class AppTheme {
-  static const Radius defaultRadius = Radius.circular(12);
+  // Rayon beaucoup plus prononcé pour un look moderne
+  static const double borderRadius = 24.0;
 
   static ThemeData get darkTheme {
     return ThemeData(
+      useMaterial3: true, // Activation de Material 3
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.mainBackground,
-      primaryColor: AppColors.mainColor,
+      scaffoldBackgroundColor: AppColors.background,
+      fontFamily: 'Poppins', // Suggestion: ajoutez une police moderne dans votre pubspec.yaml
+
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.mainColor,
-        secondary: AppColors.secondaryColor,
+        primary: AppColors.primary,
+        secondary: AppColors.accent,
+        surface: AppColors.surface,
         error: AppColors.error,
-        surface: AppColors.secondaryBackground,
+        onSurface: AppColors.textPrimary,
+        onPrimary: Colors.white,
       ),
+
+      // AppBar épurée et transparente
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.secondaryBackground,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: true,
+        scrolledUnderElevation: 0,
         titleTextStyle: TextStyle(
-          color: AppColors.mainText,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
+          color: AppColors.textPrimary,
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.5,
         ),
-        iconTheme: IconThemeData(color: AppColors.mainText),
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
+
+      // Textes modernes
       textTheme: const TextTheme(
-        bodyLarge: TextStyle(color: AppColors.mainText),
-        bodyMedium: TextStyle(color: AppColors.secondaryText),
-        bodySmall: TextStyle(color: AppColors.secondaryText),
-        titleLarge: TextStyle(
-          color: AppColors.mainText,
+        headlineMedium: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 32,
           fontWeight: FontWeight.bold,
+          letterSpacing: -1.0,
         ),
-      ),
-      buttonTheme: const ButtonThemeData(
-        buttonColor: AppColors.primaryBlue,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(defaultRadius),
+        headlineSmall: TextStyle(
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w700,
         ),
-        textTheme: ButtonTextTheme.primary,
+        bodyLarge: TextStyle(color: AppColors.textPrimary, fontSize: 16),
+        bodyMedium: TextStyle(color: AppColors.textSecondary, fontSize: 14),
       ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: ButtonStyle(
-          padding: const WidgetStatePropertyAll(EdgeInsets.all(16)),
-          backgroundColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.pressed)) {
-              return AppColors.secondaryButton;
-            }
-            return AppColors.mainColor;
-          }),
-          foregroundColor: const WidgetStatePropertyAll<Color>(
-            AppColors.mainText,
-          ),
-          shape: const WidgetStatePropertyAll<RoundedRectangleBorder>(
-            RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(defaultRadius),
-            ),
-          ),
-          textStyle: const WidgetStatePropertyAll<TextStyle>(
-            TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.secondaryButton,
-          foregroundColor: AppColors.mainText,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(defaultRadius),
-          ),
-          textStyle: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: AppColors.mainColor,
-        foregroundColor: AppColors.black,
-      ),
-      inputDecorationTheme: const InputDecorationTheme(
+
+      // Champs de texte modernes (sans bordure, fond subtil)
+      inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.thirdBackground,
-        hintStyle: TextStyle(color: AppColors.secondaryText),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(defaultRadius),
-          borderSide: BorderSide(color: AppColors.mainColor),
+        fillColor: AppColors.surface,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: 15),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+          borderSide: BorderSide.none, // Pas de bordure par défaut (clean)
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(defaultRadius),
-          borderSide: BorderSide(color: Colors.transparent),
+          borderRadius: BorderRadius.circular(borderRadius),
+          borderSide: BorderSide(color: AppColors.surfaceLight.withOpacity(0.3)),
         ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(defaultRadius),
-          borderSide: BorderSide(color: Colors.transparent),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(defaultRadius),
-          borderSide: BorderSide(color: AppColors.error),
+          borderRadius: BorderRadius.circular(borderRadius),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(defaultRadius),
-          borderSide: BorderSide(color: AppColors.error),
+        prefixIconColor: AppColors.textSecondary,
+        suffixIconColor: AppColors.textSecondary,
+      ),
+
+      // Boutons "Pill shape" (très arrondis)
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(borderRadius),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+          minimumSize: const Size(100, 20),
         ),
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: AppColors.secondaryBackground,
-        indicatorColor: AppColors.mainColor,
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: AppColors.black);
-          }
-          return const IconThemeData(color: AppColors.secondaryText);
-        }),
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return const TextStyle(
-              color: AppColors.mainText,
-              fontWeight: FontWeight.bold,
-            );
-          }
-          return const TextStyle(color: AppColors.secondaryText);
-        }),
+
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.accent,
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }

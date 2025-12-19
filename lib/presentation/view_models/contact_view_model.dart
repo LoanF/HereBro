@@ -86,7 +86,6 @@ class ContactViewModel extends CommonViewModel {
 
       if (pendingRequest.exists) throw Exception("Demande déjà envoyée.");
 
-      // Si demande entrante existante, l'accepter automatiquement
       final incomingRequest = await _firestore
           .collection(FirestoreCollection.users.value)
           .doc(currentUser.uid)

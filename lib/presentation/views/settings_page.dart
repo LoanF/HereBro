@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -40,11 +39,8 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
     if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
+      setState(() => _selectedImage = File(pickedFile.path));
     }
   }
 
@@ -54,15 +50,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final user = viewModel.currentUser;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Mon profil"),
-        actions: [
-          IconButton(
-            onPressed: () => _showConfirmDelete(context, viewModel),
-            icon: const Icon(Icons.delete_outline, color: AppColors.error),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text("Profil")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -70,54 +58,47 @@ class _SettingsPageState extends State<SettingsPage> {
             GestureDetector(
               onTap: _pickImage,
               child: Stack(
+                alignment: Alignment.bottomRight,
                 children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.grey.shade800,
-                    backgroundImage: _getProfileImage(user?.photoURL),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Colors.blue,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primary, width: 2),
                     ),
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: AppColors.surfaceLight,
+                      backgroundImage: _getProfileImage(user?.photoURL),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.background, width: 4),
+                    ),
+                    child: const Icon(Icons.edit_rounded, color: Colors.white, size: 20),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 48),
-            TextField(
-              controller: _emailController,
-              enabled: false,
-              decoration: InputDecoration(
-                labelText: "Email",
-                prefixIcon: const Icon(Icons.email),
-                border: const OutlineInputBorder(),
-                hintText: user?.email ?? "Non renseigné",
-              ),
-            ),
-            const SizedBox(height: 16),
+
+            _buildReadOnlyField("Email", user?.email ?? "Non renseigné", Icons.email_outlined),
+            const SizedBox(height: 20),
 
             TextField(
               controller: _nameController,
+              style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 labelText: "Nom d'affichage",
-                prefixIcon: Icon(Icons.person),
-                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_outline_rounded),
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
 
             SizedBox(
               width: double.infinity,
@@ -125,96 +106,44 @@ class _SettingsPageState extends State<SettingsPage> {
                 onPressed: viewModel.isLoading
                     ? null
                     : () async {
-                        final success = await context
-                            .read<AuthViewModel>()
-                            .updateProfile(
-                              newName: _nameController.text,
-                              newImageFile: _selectedImage,
-                            );
+                  final success = await context.read<AuthViewModel>().updateProfile(
+                    newName: _nameController.text,
+                    newImageFile: _selectedImage,
+                  );
 
-                        if (context.mounted) {
-                          if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Profil mis à jour !"),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                            setState(() {
-                              _selectedImage = null;
-                            });
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(viewModel.errorMessage!),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                icon: viewModel.isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(
-                  viewModel.isLoading
-                      ? "Enregistrement..."
-                      : "Sauvegarder les modifications",
-                ),
+                  if (context.mounted && success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Profil mis à jour !"), backgroundColor: AppColors.success),
+                    );
+                    setState(() => _selectedImage = null);
+                  }
+                },
+                icon: const Icon(Icons.save_rounded),
+                label: Text(viewModel.isLoading ? "Enregistrement..." : "Sauvegarder"),
               ),
             ),
 
-            const SizedBox(height: 24),
-            const Divider(),
+            const SizedBox(height: 40),
 
-            TextButton.icon(
-              onPressed: () async {
-                final bool? confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text("Déconnexion"),
-                    content: const Text(
-                      "Voulez-vous vraiment vous déconnecter ?",
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text("Annuler"),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text(
-                          "Se déconnecter",
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    ],
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.logout_rounded, color: AppColors.warning),
+                    title: const Text("Se déconnecter", style: TextStyle(color: AppColors.warning)),
+                    onTap: () => _confirmLogout(context),
                   ),
-                );
-
-                if (confirm == true && context.mounted) {
-                  await context.read<HomeViewModel>().stopTracking();
-
-                  if (context.mounted) {
-                    await context.read<AuthViewModel>().logout();
-                  }
-
-                  if (context.mounted) {
-                    context.go(AppRoutes.login);
-                  }
-                }
-              },
-              icon: const Icon(Icons.logout, color: Colors.red),
-              label: const Text(
-                "Se déconnecter",
-                style: TextStyle(color: Colors.red),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.delete_forever_rounded, color: AppColors.error),
+                    title: const Text("Supprimer mon compte", style: TextStyle(color: AppColors.error)),
+                    onTap: () => _showConfirmDelete(context, viewModel),
+                  ),
+                ],
               ),
             ),
           ],
@@ -223,61 +152,77 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showConfirmDelete(BuildContext context, AuthViewModel viewModel) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Confirmer la suppression"),
-        content: const Text(
-          "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.",
+  Widget _buildReadOnlyField(String label, String value, IconData icon) {
+    return TextField(
+      enabled: false,
+      controller: TextEditingController(text: value),
+      style: TextStyle(color: AppColors.textSecondary),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: AppColors.textSecondary),
+        fillColor: AppColors.surfaceLight.withOpacity(0.1),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24), // Match theme
+          borderSide: BorderSide(color: AppColors.surfaceLight.withOpacity(0.3)),
         ),
-        actions: [
-          TextButton(
-            onPressed: viewModel.isLoading
-                ? null
-                : () => Navigator.pop(context),
-            child: const Text("Annuler"),
-          ),
-          TextButton(
-            onPressed: viewModel.isLoading
-                ? null
-                : () async {
-                    await viewModel.deleteAccount();
-                    if (context.mounted) {
-                      if (viewModel.errorMessage != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(viewModel.errorMessage!)),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Suppression du compte avec succès"),
-                          ),
-                        );
-                      }
-                      Navigator.pop(context);
-                      context.go(AppRoutes.login);
-                    }
-                  },
-            child: Text(
-              viewModel.isLoading ? "Suppression" : "Supprimer",
-              style: const TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
       ),
     );
   }
 
-  ImageProvider _getProfileImage(String? firebasePhotoUrl) {
-    if (_selectedImage != null) {
-      return FileImage(_selectedImage!);
-    }
-    if (firebasePhotoUrl != null && firebasePhotoUrl.isNotEmpty) {
-      return NetworkImage(firebasePhotoUrl);
-    }
-    return const NetworkImage(
-      "https://ui-avatars.com/api/?name=User&background=random",
+  Future<void> _confirmLogout(BuildContext context) async {
+    // ... Logique de logout identique ...
+    final bool? confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: const Text("Déconnexion"),
+          content: const Text("Voulez-vous vraiment quitter ?"),
+          actions: [
+            TextButton(onPressed: ()=>Navigator.pop(context,false), child: const Text("Annuler")),
+            FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.warning),
+                onPressed: ()=>Navigator.pop(context,true),
+                child: const Text("Déconnexion")
+            )
+          ],
+        )
     );
+    if(confirm == true && context.mounted) {
+      await context.read<HomeViewModel>().stopTracking();
+      if(context.mounted) await context.read<AuthViewModel>().logout();
+      if(context.mounted) context.go(AppRoutes.login);
+    }
+  }
+
+  void _showConfirmDelete(BuildContext context, AuthViewModel viewModel) {
+    // ... Dialog de suppression ...
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: const Text("Suppression définitive"),
+          content: const Text("Cette action est irréversible. Toutes vos données seront effacées."),
+          actions: [
+            TextButton(onPressed: ()=>Navigator.pop(context), child: const Text("Annuler")),
+            FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                onPressed: () async {
+                  await viewModel.deleteAccount();
+                  if(context.mounted) {
+                    Navigator.pop(context);
+                    context.go(AppRoutes.login);
+                  }
+                },
+                child: const Text("Supprimer")
+            )
+          ],
+        )
+    );
+  }
+
+  ImageProvider _getProfileImage(String? firebasePhotoUrl) {
+    if (_selectedImage != null) return FileImage(_selectedImage!);
+    if (firebasePhotoUrl != null && firebasePhotoUrl.isNotEmpty) return NetworkImage(firebasePhotoUrl);
+    return const NetworkImage("https://ui-avatars.com/api/?name=User&background=random");
   }
 }
