@@ -38,7 +38,7 @@ class AuthService implements IAuthService {
       email: email,
       password: password.trim(),
     );
-    _appUserService.updateUser(_appUserService.currentAppUser!);
+    await _appUserService.fetchAndSetCurrentUser(currentUser!.uid);
   }
 
   @override

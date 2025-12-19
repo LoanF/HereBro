@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/di.dart';
-import '../../core/services/selfie_service.dart';
 import '../../core/themes/app_colors.dart';
 import '../../data/enums/firestore_collection_enum.dart';
 import '../view_models/contact_view_model.dart';
@@ -19,7 +17,7 @@ class _ContactPageState extends State<ContactPage> {
   int _selectedIndex = 0;
   final emailController = TextEditingController();
 
-  void _showAddDialog(BuildContext context) {
+  void _showAddDialog(BuildContext context, ContactViewModel viewModel) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -53,37 +51,54 @@ class _ContactPageState extends State<ContactPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: viewModel.isLoading
+                ? null
+                : () => Navigator.pop(context),
             child: const Text("Annuler"),
           ),
-          FilledButton(
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
+          FilledButton.icon(
+            onPressed: viewModel.isLoading
+                ? null
+                : () async {
+                    final navigator = Navigator.of(context);
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-              final success = await context
-                  .read<ContactViewModel>()
-                  .sendFriendRequest(emailController.text);
+                    final success = await viewModel.sendFriendRequest(
+                      emailController.text,
+                    );
 
-              if (success) {
-                navigator.pop();
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text("Demande envoyée !"),
-                    backgroundColor: Colors.blue,
-                  ),
-                );
-              } else if (context.mounted) {
-                final error = context.read<ContactViewModel>().errorMessage;
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text(error ?? "Erreur"),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: const Text("Envoyer"),
+                    if (success) {
+                      emailController.clear();
+                      navigator.pop();
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text("Demande envoyée !"),
+                          backgroundColor: Colors.blue,
+                        ),
+                      );
+                    } else if (context.mounted) {
+                      final error = context
+                          .read<ContactViewModel>()
+                          .errorMessage;
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(
+                          content: Text(error ?? "Erreur"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+            icon: viewModel.isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.send),
+            label: Text(viewModel.isLoading ? "Envoi..." : "Envoyer"),
           ),
         ],
       ),
@@ -92,6 +107,7 @@ class _ContactPageState extends State<ContactPage> {
 
   @override
   Widget build(BuildContext context) {
+    final contactViewModel = context.watch<ContactViewModel>();
     return Scaffold(
       appBar: AppBar(
         title: const Text("Contacts"),
@@ -108,7 +124,7 @@ class _ContactPageState extends State<ContactPage> {
       ),
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton.extended(
-              onPressed: () => _showAddDialog(context),
+              onPressed: () => _showAddDialog(context, contactViewModel),
               icon: const Icon(Icons.person_add),
               label: const Text("Ajouter"),
             )
@@ -116,7 +132,10 @@ class _ContactPageState extends State<ContactPage> {
 
       body: IndexedStack(
         index: _selectedIndex,
-        children: [_buildContactList(context), _buildRequestsList(context)],
+        children: [
+          _buildContactList(context, contactViewModel),
+          _buildRequestsList(context, contactViewModel),
+        ],
       ),
 
       bottomNavigationBar: NavigationBar(
@@ -134,12 +153,10 @@ class _ContactPageState extends State<ContactPage> {
           ),
 
           StreamBuilder<QuerySnapshot>(
-            stream: context.read<ContactViewModel>().getFriendRequestsStream(),
+            stream: contactViewModel.getFriendRequestsStream(),
             builder: (context, snapshotFriends) {
               return StreamBuilder<QuerySnapshot>(
-                stream: context
-                    .read<ContactViewModel>()
-                    .getLocationRequestsStream(),
+                stream: contactViewModel.getLocationRequestsStream(),
                 builder: (context, snapshotLoc) {
                   int count = 0;
                   if (snapshotFriends.hasData) {
@@ -171,9 +188,7 @@ class _ContactPageState extends State<ContactPage> {
     );
   }
 
-  Widget _buildContactList(BuildContext context) {
-    final viewModel = context.read<ContactViewModel>();
-
+  Widget _buildContactList(BuildContext context, ContactViewModel viewModel) {
     return StreamBuilder<List<String>>(
       stream: viewModel.getSharedWithIdsStream(),
       builder: (context, sharedSnapshot) {
@@ -325,9 +340,7 @@ class _ContactPageState extends State<ContactPage> {
     );
   }
 
-  Widget _buildRequestsList(BuildContext context) {
-    final viewModel = context.read<ContactViewModel>();
-
+  Widget _buildRequestsList(BuildContext context, ContactViewModel viewModel) {
     return StreamBuilder<QuerySnapshot>(
       stream: viewModel.getFriendRequestsStream(),
       builder: (context, snapshotFriends) {
@@ -601,7 +614,6 @@ class _ContactPageState extends State<ContactPage> {
     Map<String, dynamic> request,
     String friendUid,
   ) {
-    final ISelfieService selfieService = getIt<ISelfieService>();
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(

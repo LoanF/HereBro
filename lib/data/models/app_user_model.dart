@@ -58,6 +58,10 @@ class AppUser {
     Position? position,
     String? fcmToken,
   }) {
+    print('Copying AppUser with:');
+    print('  displayName: $displayName');
+    print('  photoURL: $photoURL');
+    print('  position: $position');
     return AppUser(
       uid: uid,
       displayName: displayName ?? this.displayName,

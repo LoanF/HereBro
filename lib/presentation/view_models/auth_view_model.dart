@@ -66,6 +66,10 @@ class AuthViewModel extends CommonViewModel {
 
       String? photoUrl;
 
+      print(
+        'Updating profile with name: $newName and image file: $newImageFile',
+      );
+
       if (newImageFile != null) {
         final ref = _storage
             .ref()
@@ -77,17 +81,20 @@ class AuthViewModel extends CommonViewModel {
       }
 
       if (newName != user.displayName) {
+        print('Updating display name to: $newName');
         await user.updateDisplayName(newName);
       }
 
       AppUser? updatedAppUser;
 
       if (newName.isNotEmpty) {
+        print('Preparing to update AppUser display name to: $newName');
         updatedAppUser = _appUserService.currentAppUser!.copyWith(
           displayName: newName,
         );
       }
       if (photoUrl != null) {
+        print('Preparing to update AppUser photoURL to: $photoUrl');
         updatedAppUser = _appUserService.currentAppUser!.copyWith(
           photoURL: photoUrl,
         );
@@ -97,6 +104,7 @@ class AuthViewModel extends CommonViewModel {
         _appUserService.updateUser(updatedAppUser);
       }
 
+      print('Reloading user to fetch latest data');
       await user.reload();
 
       isLoading = false;
