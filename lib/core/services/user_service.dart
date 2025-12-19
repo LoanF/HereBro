@@ -55,9 +55,7 @@ class AppUserService implements IAppUserService {
 
   @override
   Future<void> updateUser(AppUser user) async {
-    _currentAppUser ??= await getUserById(user.uid);
-    print('Updating user: ${user.toJson()}');
-    print('Current user: ${_currentAppUser?.toJson()}');
+    _currentAppUser ?? await fetchAndSetCurrentUser(user.uid);
 
     if (_currentAppUser == null) {
       throw Exception('User not found');
@@ -72,13 +70,6 @@ class AppUserService implements IAppUserService {
       return;
     }
 
-    user = _currentAppUser!.copyWith(
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      fcmToken: user.fcmToken,
-    )!;
-
-    print('Updating user: ${user.toJson()}');
     await usersCollection.doc(user.uid).update(user.toJson());
   }
 
@@ -86,8 +77,6 @@ class AppUserService implements IAppUserService {
   Future<AppUser> updateFcmToken(AppUser appUser) async {
     final fcmToken = await _firebaseMessaging.getToken();
     if (fcmToken == null) return appUser;
-
-    print(appUser);
 
     return AppUser(
       uid: appUser.uid,

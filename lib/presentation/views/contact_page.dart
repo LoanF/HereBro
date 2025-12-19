@@ -77,9 +77,7 @@ class _ContactPageState extends State<ContactPage> {
                         ),
                       );
                     } else if (context.mounted) {
-                      final error = context
-                          .read<ContactViewModel>()
-                          .errorMessage;
+                      final error = viewModel.errorMessage;
                       scaffoldMessenger.showSnackBar(
                         SnackBar(
                           content: Text(error ?? "Erreur"),

@@ -44,11 +44,11 @@ class AppUser {
       'uid': uid,
       'displayName': displayName,
       'email': email,
-      if (photoURL != null) 'photoURL': photoURL,
+      if (photoURL != null && photoURL!.isNotEmpty) 'photoURL': photoURL,
       if (position != null) 'position': position!.toJson(),
       'createdAt': createdAt,
       'updatedAt': updatedAt,
-      if (fcmToken != null) 'fcmToken': fcmToken,
+      if (fcmToken != null && fcmToken!.isNotEmpty) 'fcmToken': fcmToken,
     };
   }
 

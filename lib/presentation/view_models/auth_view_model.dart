@@ -64,11 +64,11 @@ class AuthViewModel extends CommonViewModel {
       final user = _auth.currentUser;
       if (user == null) throw Exception("Utilisateur non connecté");
 
-      String? photoUrl;
+      if (_appUserService.currentAppUser == null) {
+        await _appUserService.fetchAndSetCurrentUser(user.uid);
+      }
 
-      print(
-        'Updating profile with name: $newName and image file: $newImageFile',
-      );
+      String? photoUrl;
 
       if (newImageFile != null) {
         final ref = _storage
@@ -81,30 +81,26 @@ class AuthViewModel extends CommonViewModel {
       }
 
       if (newName != user.displayName) {
-        print('Updating display name to: $newName');
         await user.updateDisplayName(newName);
       }
 
       AppUser? updatedAppUser;
 
-      if (newName.isNotEmpty) {
-        print('Preparing to update AppUser display name to: $newName');
-        updatedAppUser = _appUserService.currentAppUser!.copyWith(
-          displayName: newName,
-        );
+      if (newName.isEmpty) {
+        newName = user.displayName ?? '';
       }
-      if (photoUrl != null) {
-        print('Preparing to update AppUser photoURL to: $photoUrl');
-        updatedAppUser = _appUserService.currentAppUser!.copyWith(
-          photoURL: photoUrl,
-        );
-      }
+
+      updatedAppUser = _appUserService.currentAppUser!.copyWith(
+        displayName: newName,
+        photoURL: photoUrl,
+      );
+
+      print('Updated AppUser: ${updatedAppUser?.toJson()}');
 
       if (updatedAppUser != null) {
         _appUserService.updateUser(updatedAppUser);
       }
 
-      print('Reloading user to fetch latest data');
       await user.reload();
 
       isLoading = false;
