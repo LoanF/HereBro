@@ -120,7 +120,7 @@ class HomeViewModel extends CommonViewModel {
       // Check precision: if accuracy is too large, prompt user to enable precise location
       if (position.accuracy > _desiredAccuracyMeters) {
         _warningMessage =
-            "Loc approximative (${position.accuracy.toStringAsFixed(0)} m)";
+            "Précision (${position.accuracy.toStringAsFixed(0)} m)";
         notifyListeners();
       }
 
@@ -151,7 +151,7 @@ class HomeViewModel extends CommonViewModel {
               // check stream positions accuracy too
               if (newPos.accuracy > _desiredAccuracyMeters) {
                 _warningMessage =
-                    "Loc approximative (${newPos.accuracy.toStringAsFixed(0)} m)";
+                    "Précision (${newPos.accuracy.toStringAsFixed(0)} m)";
                 notifyListeners();
               }
 

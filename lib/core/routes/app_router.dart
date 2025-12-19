@@ -4,6 +4,7 @@ import '../../presentation/views/contact_page.dart';
 import '../../presentation/views/contact_request_page.dart';
 import '../../presentation/views/home_page.dart';
 import '../../presentation/views/login_page.dart';
+import '../../presentation/views/photos_page.dart';
 import '../../presentation/views/register_page.dart';
 import '../../presentation/views/settings_page.dart';
 import '../di.dart';
@@ -68,6 +69,11 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.settings,
       name: 'settings',
       builder: (context, state) => const SettingsPage(),
+    ),
+    GoRoute(
+      path: AppRoutes.photos,
+      name: 'photos',
+      builder: (context, state) => const PhotosPage(),
     ),
   ],
 );

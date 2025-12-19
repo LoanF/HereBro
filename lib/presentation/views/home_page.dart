@@ -58,6 +58,10 @@ class _HomePageState extends State<HomePage> {
             fontWeight: FontWeight.normal,
           ),
         ),
+        leading: IconButton(
+          onPressed: () => context.push(AppRoutes.photos),
+          icon: const Icon(Icons.photo_library),
+        ),
         actions: [
           IconButton(
             onPressed: () => context.push(AppRoutes.contact),
