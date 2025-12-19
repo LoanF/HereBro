@@ -128,47 +128,53 @@ class ContactViewModel extends CommonViewModel {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    final batch = _firestore.batch();
+    isLoading = true;
+    try {
+      final batch = _firestore.batch();
 
-    final senderRef = _firestore
-        .collection(FirestoreCollection.users.value)
-        .doc(senderUid)
-        .collection(FirestoreCollection.contacts.value)
-        .doc(currentUser.uid);
+      final senderRef = _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(senderUid)
+          .collection(FirestoreCollection.contacts.value)
+          .doc(currentUser.uid);
 
-    batch.set(senderRef, {
-      'uid': currentUser.uid,
-      'displayName': currentUser.displayName,
-      'email': currentUser.email,
-      'photoURL': currentUser.photoURL,
-      'addedAt': FieldValue.serverTimestamp(),
-      'isSender': false,
-    });
+      batch.set(senderRef, {
+        'uid': currentUser.uid,
+        'displayName': currentUser.displayName,
+        'email': currentUser.email,
+        'photoURL': currentUser.photoURL,
+        'addedAt': FieldValue.serverTimestamp(),
+        'isSender': false,
+      });
 
-    final myContactRef = _firestore
-        .collection(FirestoreCollection.users.value)
-        .doc(currentUser.uid)
-        .collection(FirestoreCollection.contacts.value)
-        .doc(senderUid);
+      final myContactRef = _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(currentUser.uid)
+          .collection(FirestoreCollection.contacts.value)
+          .doc(senderUid);
 
-    batch.set(myContactRef, {
-      'uid': senderUid,
-      'displayName': senderData['displayName'],
-      'email': senderData['email'],
-      'photoURL': senderData['photoURL'],
-      'addedAt': FieldValue.serverTimestamp(),
-      'isSender': true,
-    });
+      batch.set(myContactRef, {
+        'uid': senderUid,
+        'displayName': senderData['displayName'],
+        'email': senderData['email'],
+        'photoURL': senderData['photoURL'],
+        'addedAt': FieldValue.serverTimestamp(),
+        'isSender': true,
+      });
 
-    final requestRef = _firestore
-        .collection(FirestoreCollection.users.value)
-        .doc(currentUser.uid)
-        .collection(FirestoreCollection.friendRequests.value)
-        .doc(senderUid);
+      final requestRef = _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(currentUser.uid)
+          .collection(FirestoreCollection.friendRequests.value)
+          .doc(senderUid);
 
-    batch.delete(requestRef);
+      batch.delete(requestRef);
 
-    await batch.commit();
+      await batch.commit();
+      isLoading = false;
+    } catch (e) {
+      errorMessage = e.toString();
+    }
   }
 
   Future<void> refuseFriendRequest(String senderUid) async {
@@ -203,7 +209,6 @@ class ContactViewModel extends CommonViewModel {
       return true;
     } catch (e) {
       errorMessage = e.toString();
-      notifyListeners();
       return false;
     }
   }
@@ -225,45 +230,50 @@ class ContactViewModel extends CommonViewModel {
     if (currentUser == null) return;
     isLoading = true;
 
-    if (withSelfie) {
-      await captureSelfieForLocationRequest(senderUid);
-    } else {
-      await _selfie.deleteCapture(currentUser.uid, senderUid);
+    try {
+      if (withSelfie) {
+        await captureSelfieForLocationRequest(senderUid);
+      } else {
+        await _selfie.deleteCapture(currentUser.uid, senderUid);
+      }
+
+      final batch = _firestore.batch();
+
+      final requestRef = _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(currentUser.uid)
+          .collection(FirestoreCollection.locationRequests.value)
+          .doc(senderUid);
+      batch.delete(requestRef);
+
+      final trackingRef = _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(senderUid)
+          .collection(FirestoreCollection.tracking.value)
+          .doc(currentUser.uid);
+      batch.set(trackingRef, {
+        'uid': currentUser.uid,
+        'displayName': currentUser.displayName,
+        'email': currentUser.email,
+        'photoURL': currentUser.photoURL,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      final sharedWithRef = _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(currentUser.uid)
+          .collection(FirestoreCollection.sharedWith.value)
+          .doc(senderUid);
+      batch.set(sharedWithRef, {
+        'uid': senderUid,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      await batch.commit();
+      isLoading = false;
+    } catch (e) {
+      errorMessage = e.toString();
     }
-
-    final batch = _firestore.batch();
-
-    final requestRef = _firestore
-        .collection(FirestoreCollection.users.value)
-        .doc(currentUser.uid)
-        .collection(FirestoreCollection.locationRequests.value)
-        .doc(senderUid);
-    batch.delete(requestRef);
-
-    final trackingRef = _firestore
-        .collection(FirestoreCollection.users.value)
-        .doc(senderUid)
-        .collection(FirestoreCollection.tracking.value)
-        .doc(currentUser.uid);
-    batch.set(trackingRef, {
-      'uid': currentUser.uid,
-      'displayName': currentUser.displayName,
-      'email': currentUser.email,
-      'photoURL': currentUser.photoURL,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-
-    final sharedWithRef = _firestore
-        .collection(FirestoreCollection.users.value)
-        .doc(currentUser.uid)
-        .collection(FirestoreCollection.sharedWith.value)
-        .doc(senderUid);
-    batch.set(sharedWithRef, {
-      'uid': senderUid,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-
-    await batch.commit();
   }
 
   Future<bool> stopSharingLocation(String friendUid) async {
@@ -349,37 +359,41 @@ class ContactViewModel extends CommonViewModel {
 
     isLoading = true;
 
-    await _firestore
-        .collection(FirestoreCollection.users.value)
-        .doc(currentUser.uid)
-        .collection(FirestoreCollection.contacts.value)
-        .doc(friendUid)
-        .delete();
+    try {
+      await _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(currentUser.uid)
+          .collection(FirestoreCollection.contacts.value)
+          .doc(friendUid)
+          .delete();
 
-    await _firestore
-        .collection(FirestoreCollection.users.value)
-        .doc(friendUid)
-        .collection(FirestoreCollection.contacts.value)
-        .doc(currentUser.uid)
-        .delete();
+      await _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(friendUid)
+          .collection(FirestoreCollection.contacts.value)
+          .doc(currentUser.uid)
+          .delete();
 
-    // Suppression du tracking et du partage de localisation
-    await stopSharingLocation(friendUid);
-    await _firestore
-        .collection(FirestoreCollection.users.value)
-        .doc(currentUser.uid)
-        .collection(FirestoreCollection.tracking.value)
-        .doc(friendUid)
-        .delete();
+      // Suppression du tracking et du partage de localisation
+      await stopSharingLocation(friendUid);
+      await _firestore
+          .collection(FirestoreCollection.users.value)
+          .doc(currentUser.uid)
+          .collection(FirestoreCollection.tracking.value)
+          .doc(friendUid)
+          .delete();
 
-    // Suppression des selfies associés
-    _selfie.deleteCapture(currentUser.uid, friendUid);
-    _selfie.deleteCapture(friendUid, currentUser.uid);
+      // Suppression des selfies associés
+      _selfie.deleteCapture(currentUser.uid, friendUid);
+      _selfie.deleteCapture(friendUid, currentUser.uid);
 
-    // Suppression des demandes en attente
-    await refuseFriendRequest(friendUid);
-    await refuseLocationRequest(friendUid);
+      // Suppression des demandes en attente
+      await refuseFriendRequest(friendUid);
+      await refuseLocationRequest(friendUid);
 
-    isLoading = false;
+      isLoading = false;
+    } catch (e) {
+      errorMessage = e.toString();
+    }
   }
 }
