@@ -17,7 +17,7 @@ abstract class CommonViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   set errorMessage(String? value) {
-    _isLoading = false;
+    if (value != null) _isLoading = false;
     _errorMessage = value;
     notifyListeners();
   }

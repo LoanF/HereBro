@@ -4,12 +4,16 @@ class FriendLocation {
   final String uid;
   final LatLng position;
   final String displayName;
-  final String? photoURL;
+  final String email;
+  final String? photoUrl;
+  final String? selfieUrl;
 
   FriendLocation({
     required this.uid,
     required this.position,
     required this.displayName,
-    this.photoURL,
+    required this.email,
+    this.photoUrl,
+    this.selfieUrl,
   });
 }

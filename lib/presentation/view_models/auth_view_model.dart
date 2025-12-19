@@ -59,11 +59,14 @@ class AuthViewModel extends CommonViewModel {
     File? newImageFile,
   }) async {
     isLoading = true;
-    errorMessage = null;
 
     try {
       final user = _auth.currentUser;
       if (user == null) throw Exception("Utilisateur non connecté");
+
+      if (_appUserService.currentAppUser == null) {
+        await _appUserService.fetchAndSetCurrentUser(user.uid);
+      }
 
       String? photoUrl;
 
@@ -83,16 +86,16 @@ class AuthViewModel extends CommonViewModel {
 
       AppUser? updatedAppUser;
 
-      if (newName.isNotEmpty) {
-        updatedAppUser = _appUserService.currentAppUser!.copyWith(
-          displayName: newName,
-        );
+      if (newName.isEmpty) {
+        newName = user.displayName ?? '';
       }
-      if (photoUrl != null) {
-        updatedAppUser = _appUserService.currentAppUser!.copyWith(
-          photoURL: photoUrl,
-        );
-      }
+
+      updatedAppUser = _appUserService.currentAppUser!.copyWith(
+        displayName: newName,
+        photoURL: photoUrl,
+      );
+
+      print('Updated AppUser: ${updatedAppUser?.toJson()}');
 
       if (updatedAppUser != null) {
         _appUserService.updateUser(updatedAppUser);
@@ -103,9 +106,20 @@ class AuthViewModel extends CommonViewModel {
       isLoading = false;
       return true;
     } catch (e) {
-      isLoading = false;
       errorMessage = "Erreur mise à jour : $e";
       return false;
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    isLoading = true;
+    try {
+      await _auth.deleteAccount();
+      isLoading = false;
+    } on FirebaseAuthException catch (e) {
+      errorMessage = AuthExceptionCode.getMessageFromCode(e.code);
+    } catch (e) {
+      errorMessage = "Une erreur est survenue";
     }
   }
 }

@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/themes/app_colors.dart';
+import '../../data/enums/firestore_collection_enum.dart';
 import '../view_models/contact_view_model.dart';
 
 class ContactPage extends StatefulWidget {
@@ -13,14 +15,13 @@ class ContactPage extends StatefulWidget {
 
 class _ContactPageState extends State<ContactPage> {
   int _selectedIndex = 0;
+  final emailController = TextEditingController();
 
-  void _showAddDialog(BuildContext context) {
-    final emailController = TextEditingController();
-
+  void _showAddDialog(BuildContext context, ContactViewModel viewModel) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Ajouter un ami"),
+        title: const Text("Ajouter un contact"),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -35,7 +36,7 @@ class _ContactPageState extends State<ContactPage> {
                 autofocus: true,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  labelText: "Email de l'ami",
+                  labelText: "Email du contact",
                   hintText: "exemple@gmail.com",
                   prefixIcon: Icon(Icons.mail_outline),
                   border: OutlineInputBorder(),
@@ -50,37 +51,52 @@ class _ContactPageState extends State<ContactPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: viewModel.isLoading
+                ? null
+                : () => Navigator.pop(context),
             child: const Text("Annuler"),
           ),
-          FilledButton(
-            onPressed: () async {
-              final navigator = Navigator.of(context);
-              final scaffoldMessenger = ScaffoldMessenger.of(context);
+          FilledButton.icon(
+            onPressed: viewModel.isLoading
+                ? null
+                : () async {
+                    final navigator = Navigator.of(context);
+                    final scaffoldMessenger = ScaffoldMessenger.of(context);
 
-              final success = await context
-                  .read<ContactViewModel>()
-                  .sendFriendRequest(emailController.text);
+                    final success = await viewModel.sendFriendRequest(
+                      emailController.text,
+                    );
 
-              if (success) {
-                navigator.pop();
-                scaffoldMessenger.showSnackBar(
-                  const SnackBar(
-                    content: Text("Demande envoyée !"),
-                    backgroundColor: Colors.blue,
-                  ),
-                );
-              } else if (context.mounted) {
-                final error = context.read<ContactViewModel>().errorMessage;
-                scaffoldMessenger.showSnackBar(
-                  SnackBar(
-                    content: Text(error ?? "Erreur"),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: const Text("Envoyer"),
+                    if (success) {
+                      emailController.clear();
+                      navigator.pop();
+                      scaffoldMessenger.showSnackBar(
+                        const SnackBar(
+                          content: Text("Demande envoyée !"),
+                          backgroundColor: Colors.blue,
+                        ),
+                      );
+                    } else if (context.mounted) {
+                      final error = viewModel.errorMessage;
+                      scaffoldMessenger.showSnackBar(
+                        SnackBar(
+                          content: Text(error ?? "Erreur"),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+            icon: viewModel.isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.send),
+            label: Text(viewModel.isLoading ? "Envoi..." : "Envoyer"),
           ),
         ],
       ),
@@ -89,11 +105,24 @@ class _ContactPageState extends State<ContactPage> {
 
   @override
   Widget build(BuildContext context) {
+    final contactViewModel = context.watch<ContactViewModel>();
     return Scaffold(
-      appBar: AppBar(title: const Text("Communauté"), centerTitle: false),
+      appBar: AppBar(
+        title: const Text("Contacts"),
+        centerTitle: false,
+        // actions: [
+        //   IconButton(
+        //     statesController: WidgetStatesController({WidgetState.disabled}),
+        //     icon: const Icon(Icons.playlist_add),
+        //     onPressed: () {
+        //       context.push(AppRoutes.contactRequests);
+        //     },
+        //   ),
+        // ],
+      ),
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton.extended(
-              onPressed: () => _showAddDialog(context),
+              onPressed: () => _showAddDialog(context, contactViewModel),
               icon: const Icon(Icons.person_add),
               label: const Text("Ajouter"),
             )
@@ -101,7 +130,10 @@ class _ContactPageState extends State<ContactPage> {
 
       body: IndexedStack(
         index: _selectedIndex,
-        children: [_buildFriendsList(context), _buildRequestsList(context)],
+        children: [
+          _buildContactList(context, contactViewModel),
+          _buildRequestsList(context, contactViewModel),
+        ],
       ),
 
       bottomNavigationBar: NavigationBar(
@@ -115,22 +147,22 @@ class _ContactPageState extends State<ContactPage> {
           const NavigationDestination(
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
-            label: 'Mes Amis',
+            label: 'Mes contacts',
           ),
 
           StreamBuilder<QuerySnapshot>(
-            stream: context.read<ContactViewModel>().getFriendRequestsStream(),
+            stream: contactViewModel.getFriendRequestsStream(),
             builder: (context, snapshotFriends) {
               return StreamBuilder<QuerySnapshot>(
-                stream: context
-                    .read<ContactViewModel>()
-                    .getLocationRequestsStream(),
+                stream: contactViewModel.getLocationRequestsStream(),
                 builder: (context, snapshotLoc) {
                   int count = 0;
-                  if (snapshotFriends.hasData)
+                  if (snapshotFriends.hasData) {
                     count += snapshotFriends.data!.docs.length;
-                  if (snapshotLoc.hasData)
+                  }
+                  if (snapshotLoc.hasData) {
                     count += snapshotLoc.data!.docs.length;
+                  }
 
                   return NavigationDestination(
                     icon: Badge(
@@ -143,7 +175,7 @@ class _ContactPageState extends State<ContactPage> {
                       label: Text('$count'),
                       child: const Icon(Icons.notifications),
                     ),
-                    label: 'Demandes',
+                    label: 'Demandes reçues',
                   );
                 },
               );
@@ -154,9 +186,7 @@ class _ContactPageState extends State<ContactPage> {
     );
   }
 
-  Widget _buildFriendsList(BuildContext context) {
-    final viewModel = context.read<ContactViewModel>();
-
+  Widget _buildContactList(BuildContext context, ContactViewModel viewModel) {
     return StreamBuilder<List<String>>(
       stream: viewModel.getSharedWithIdsStream(),
       builder: (context, sharedSnapshot) {
@@ -165,10 +195,12 @@ class _ContactPageState extends State<ContactPage> {
         return StreamBuilder<QuerySnapshot>(
           stream: viewModel.getContactsStream(),
           builder: (context, snapshot) {
-            if (!snapshot.hasData)
+            if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
-            if (snapshot.data!.docs.isEmpty)
-              return _emptyState("Aucun ami", Icons.diversity_3);
+            }
+            if (snapshot.data!.docs.isEmpty) {
+              return _emptyState("Aucun contact", Icons.diversity_3);
+            }
 
             final contacts = snapshot.data!.docs;
 
@@ -184,18 +216,29 @@ class _ContactPageState extends State<ContactPage> {
 
                 return StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
-                      .collection('users')
+                      .collection(FirestoreCollection.users.value)
                       .doc(friendUid)
                       .snapshots(),
                   builder: (context, userSnapshot) {
-                    String displayName = contactDoc['displayName'] ?? "Inconnu";
-                    String? photoURL = contactDoc['photoURL'];
+                    String displayName = contactDoc['displayName'] ?? "";
+                    String? photoURL = contactDoc['photoURL'] ?? "";
 
                     if (userSnapshot.hasData && userSnapshot.data!.exists) {
                       final data =
                           userSnapshot.data!.data() as Map<String, dynamic>;
                       displayName = data['displayName'] ?? displayName;
                       photoURL = data['photoURL'] ?? photoURL;
+                      if (displayName.isEmpty) {
+                        displayName = data['email'] ?? displayName;
+                      }
+                    }
+
+                    if (displayName.isEmpty) {
+                      displayName = "Inconnu";
+                    }
+
+                    if (photoURL!.isEmpty) {
+                      photoURL = null;
                     }
 
                     return ListTile(
@@ -211,7 +254,10 @@ class _ContactPageState extends State<ContactPage> {
                               )
                             : null,
                       ),
-                      title: Text(displayName),
+                      title: Text(
+                        displayName,
+                        style: const TextStyle(color: Colors.white),
+                      ),
 
                       subtitle: isSharing
                           ? const Row(
@@ -219,13 +265,13 @@ class _ContactPageState extends State<ContactPage> {
                                 Icon(
                                   Icons.circle,
                                   size: 10,
-                                  color: Colors.green,
+                                  color: AppColors.lightGreen,
                                 ),
                                 SizedBox(width: 4),
                                 Text(
                                   "Voit votre position",
                                   style: TextStyle(
-                                    color: Colors.green,
+                                    color: AppColors.lightGreen,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -233,20 +279,53 @@ class _ContactPageState extends State<ContactPage> {
                             )
                           : null,
 
-                      trailing: IconButton(
-                        icon: Icon(
-                          isSharing
-                              ? Icons.location_on
-                              : Icons.location_on_outlined,
-                          color: isSharing ? Colors.green : Colors.blue,
-                        ),
-                        onPressed: () => _showLocationMenu(
-                          context,
-                          viewModel,
-                          friendUid,
-                          displayName,
-                          isSharing,
-                        ),
+                      trailing: Row(
+                        spacing: 8,
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              isSharing
+                                  ? Icons.location_on
+                                  : Icons.location_on_outlined,
+                              color: isSharing
+                                  ? AppColors.lightGreen
+                                  : AppColors.mainColor,
+                            ),
+                            onPressed: () => _showLocationMenu(
+                              context,
+                              viewModel,
+                              friendUid,
+                              displayName,
+                              isSharing,
+                            ),
+                          ),
+                          IconButton(
+                            statesController: WidgetStatesController(
+                              viewModel.isLoading
+                                  ? {WidgetState.disabled}
+                                  : null,
+                            ),
+                            onPressed: () async {
+                              await viewModel.removeContact(friendUid);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: AppColors.success,
+                                    content: Text(
+                                      "Contact $displayName supprimé",
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: AppColors.error,
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -259,9 +338,7 @@ class _ContactPageState extends State<ContactPage> {
     );
   }
 
-  Widget _buildRequestsList(BuildContext context) {
-    final viewModel = context.read<ContactViewModel>();
-
+  Widget _buildRequestsList(BuildContext context, ContactViewModel viewModel) {
     return StreamBuilder<QuerySnapshot>(
       stream: viewModel.getFriendRequestsStream(),
       builder: (context, snapshotFriends) {
@@ -313,9 +390,16 @@ class _ContactPageState extends State<ContactPage> {
     ContactViewModel viewModel,
   ) {
     final uid = request['uid'];
-    final name = request['displayName'] ?? "Inconnu";
+    String name = request['displayName'] ?? "";
     final photo = request['photoURL'];
     final type = request['localType'];
+
+    if (name.isEmpty) {
+      name = request['email'] ?? "";
+      if (name.isEmpty) {
+        name = "Inconnu";
+      }
+    }
 
     String subtitle;
     IconData typeIcon;
@@ -326,7 +410,7 @@ class _ContactPageState extends State<ContactPage> {
       typeIcon = Icons.location_on;
       iconColor = Colors.blue;
     } else {
-      subtitle = "Veut vous ajouter en ami";
+      subtitle = "Veut vous ajouter dans ses contacts";
       typeIcon = Icons.person_add;
       iconColor = Colors.orange;
     }
@@ -371,6 +455,7 @@ class _ContactPageState extends State<ContactPage> {
 
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
               IconButton.filledTonal(
                 style: IconButton.styleFrom(
@@ -378,11 +463,27 @@ class _ContactPageState extends State<ContactPage> {
                   foregroundColor: Colors.red,
                 ),
                 icon: const Icon(Icons.close),
-                onPressed: () {
+                onPressed: () async {
                   if (type == 'location') {
-                    viewModel.refuseLocationRequest(uid);
+                    await viewModel.refuseLocationRequest(uid);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: AppColors.success,
+                          content: Text("Demande de localisation refusée"),
+                        ),
+                      );
+                    }
                   } else {
-                    viewModel.refuseFriendRequest(uid);
+                    await viewModel.refuseFriendRequest(uid);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: AppColors.success,
+                          content: Text("Demande de contact refusée"),
+                        ),
+                      );
+                    }
                   }
                 },
               ),
@@ -393,11 +494,19 @@ class _ContactPageState extends State<ContactPage> {
                   foregroundColor: Colors.white,
                 ),
                 icon: const Icon(Icons.check),
-                onPressed: () {
+                onPressed: () async {
                   if (type == 'location') {
-                    viewModel.acceptLocationRequest(uid, request);
+                    _showAcceptLocationMenu(context, viewModel, request, uid);
                   } else {
-                    viewModel.acceptFriendRequest(uid, request);
+                    await viewModel.acceptFriendRequest(uid, request);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: AppColors.success,
+                          content: Text("Contact ajouté $name"),
+                        ),
+                      );
+                    }
                   }
                 },
               ),
@@ -488,8 +597,66 @@ class _ContactPageState extends State<ContactPage> {
                 const ListTile(
                   leading: Icon(Icons.info_outline, color: Colors.grey),
                   title: Text("Vous ne partagez pas votre position"),
-                  subtitle: Text("Cet ami ne peut pas vous voir"),
+                  subtitle: Text("Ce contact ne peut pas vous voir"),
                 ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAcceptLocationMenu(
+    BuildContext context,
+    ContactViewModel viewModel,
+    Map<String, dynamic> request,
+    String friendUid,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.check, color: Colors.green),
+                title: const Text("Partager ma position"),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await viewModel.acceptLocationRequest(friendUid, request);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        backgroundColor: AppColors.success,
+                        content: Text("Position partagée"),
+                      ),
+                    );
+                  }
+                },
+              ),
+
+              const Divider(),
+
+              ListTile(
+                leading: const Icon(
+                  Icons.camera_front_outlined,
+                  color: Colors.blue,
+                ),
+                title: const Text("Partager ma position et prendre une photo"),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  await viewModel.acceptLocationRequest(
+                    friendUid,
+                    request,
+                    true,
+                  );
+                },
+              ),
             ],
           ),
         ),

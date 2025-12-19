@@ -6,6 +6,8 @@ import 'package:latlong2/latlong.dart' hide Path;
 import 'package:provider/provider.dart';
 
 import '../../core/routes/app_routes.dart';
+import '../../core/themes/app_colors.dart';
+import '../../data/models/friend_location_model.dart';
 import '../view_models/home_view_model.dart';
 
 class HomePage extends StatefulWidget {
@@ -28,6 +30,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    context.read<HomeViewModel>().stopTracking();
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final homeViewModel = context.watch<HomeViewModel>();
 
@@ -41,8 +50,14 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text("Accueil"),
         elevation: 0,
+        title: Text(
+          homeViewModel.warningMessage ?? '',
+          style: const TextStyle(
+            color: AppColors.warning,
+            fontWeight: FontWeight.normal,
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: () => context.push(AppRoutes.contact),
@@ -84,12 +99,7 @@ class _HomePageState extends State<HomePage> {
                     ),
 
                   ...homeViewModel.friends.map((friend) {
-                    return _buildFriendMarker(
-                      friend.uid,
-                      friend.position,
-                      friend.displayName,
-                      friend.photoURL,
-                    );
+                    return _buildFriendMarker(friend);
                   }),
                 ],
               ),
@@ -97,10 +107,8 @@ class _HomePageState extends State<HomePage> {
           ),
 
           if (homeViewModel.isLoading)
-            const Positioned(
-              top: 100,
-              left: 0,
-              right: 0,
+            const Align(
+              alignment: Alignment.center,
               child: Center(
                 child: Card(
                   child: Padding(
@@ -119,89 +127,96 @@ class _HomePageState extends State<HomePage> {
             ),
 
           if (homeViewModel.errorMessage != null)
-            Positioned(
-              top: 100,
-              left: 20,
-              right: 20,
-              child: Card(
-                elevation: 4,
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.location_off,
-                        color: Colors.red,
-                        size: 40,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        homeViewModel.errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () async {
-                              await Geolocator.openLocationSettings();
-                            },
-                            child: const Text("Réglages"),
-                          ),
-                          const SizedBox(width: 16),
-                          FilledButton.icon(
-                            onPressed: () {
-                              context.read<HomeViewModel>().retryLocation();
-                            },
-                            icon: const Icon(Icons.refresh),
-                            label: const Text("Réessayer"),
-                          ),
-                        ],
-                      ),
-                    ],
+            Align(
+              alignment: Alignment.center,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Card(
+                  elevation: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.location_off,
+                          color: Colors.redAccent,
+                          size: 40,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          homeViewModel.errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.redAccent),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            FilledButton(
+                              style: const ButtonStyle(
+                                foregroundColor: WidgetStatePropertyAll(
+                                  Colors.lightBlue,
+                                ),
+                                backgroundColor: WidgetStatePropertyAll(
+                                  Colors.transparent,
+                                ),
+                              ),
+                              onPressed: () async {
+                                await Geolocator.openLocationSettings();
+                              },
+                              child: const Text("Paramètres"),
+                            ),
+                            const SizedBox(width: 16),
+                            FilledButton.icon(
+                              onPressed: () {
+                                context.read<HomeViewModel>().retryLocation();
+                              },
+                              icon: const Icon(Icons.refresh),
+                              label: const Text("Réessayer"),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-
-          Positioned(
-            bottom: 20,
-            right: 0,
-            child: SafeArea(
-              minimum: const EdgeInsets.only(bottom: 30, right: 20),
-              child: FloatingActionButton(
-                heroTag: "recenter",
-                child: const Icon(Icons.my_location),
-                onPressed: () {
-                  if (homeViewModel.currentPosition != null) {
-                    _mapController.move(homeViewModel.currentPosition!, 16);
-                    _mapController.rotate(0.0);
-                  }
-                },
-              ),
-            ),
-          ),
         ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton(
+        heroTag: "recenter",
+        child: const Icon(Icons.my_location),
+        onPressed: () {
+          if (homeViewModel.currentPosition != null) {
+            _mapController.move(homeViewModel.currentPosition!, 16);
+            _mapController.rotate(0.0);
+          }
+        },
       ),
     );
   }
 
-  Marker _buildFriendMarker(
-    String uid,
-    LatLng position,
-    String name,
-    String? photoUrl,
-  ) {
+  Marker _buildFriendMarker(FriendLocation friend) {
+    String? imageUrl = friend.selfieUrl ?? friend.photoUrl;
+    if (imageUrl == null || imageUrl.isEmpty) {
+      imageUrl = null;
+    }
+
+    String name = friend.displayName;
+    if (name.isEmpty) {
+      name = friend.email;
+    }
+
     return Marker(
-      point: position,
+      point: friend.position,
       width: 50,
       height: 50,
       child: GestureDetector(
-        onTap: () => _showFriendInfo(context, name, photoUrl),
+        onTap: () =>
+            _showFriendInfo(context, name, friend.photoUrl, friend.selfieUrl),
         child: Column(
           children: [
             Container(
@@ -214,11 +229,13 @@ class _HomePageState extends State<HomePage> {
               ),
               child: CircleAvatar(
                 radius: 18,
-                backgroundImage: photoUrl != null
-                    ? NetworkImage(photoUrl)
+                backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                    ? NetworkImage(imageUrl)
                     : null,
                 backgroundColor: Colors.green,
-                child: photoUrl == null ? Text(name[0]) : null,
+                child: imageUrl == null || imageUrl.isEmpty
+                    ? Text(name[0])
+                    : null,
               ),
             ),
             ClipPath(
@@ -256,40 +273,127 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _showFriendInfo(BuildContext context, String name, String? photoUrl) {
+  void _showFriendInfo(
+    BuildContext context,
+    String name,
+    String? photoUrl,
+    String? selfieUrl,
+  ) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // allow full-height sheet
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) => SafeArea(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundImage: photoUrl != null
-                    ? NetworkImage(photoUrl)
-                    : null,
-                child: photoUrl == null
-                    ? Text(name[0], style: const TextStyle(fontSize: 24))
-                    : null,
+      builder: (context) {
+        final mq = MediaQuery.of(context);
+
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.95,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: AppColors.secondaryBackground,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              const SizedBox(width: 16),
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: EdgeInsets.fromLTRB(
+                  24,
+                  16,
+                  24,
+                  mq.viewInsets.bottom + 24,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage:
+                              photoUrl != null && photoUrl.isNotEmpty
+                              ? NetworkImage(photoUrl)
+                              : null,
+                          child: photoUrl == null || photoUrl.isEmpty
+                              ? Text(
+                                  name[0],
+                                  style: const TextStyle(fontSize: 24),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (selfieUrl != null && selfieUrl.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 12),
+                      // Constrain image height but allow zoom/scroll
+                      SizedBox(
+                        height: mq.size.height * 0.6,
+                        width: double.infinity,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: InteractiveViewer(
+                            panEnabled: true,
+                            scaleEnabled: true,
+                            child: Image.network(
+                              selfieUrl,
+                              fit: BoxFit.contain,
+                              width: double.infinity,
+                              loadingBuilder: (context, child, progress) {
+                                if (progress == null) return child;
+                                return SizedBox(
+                                  height: mq.size.height * 0.4,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stack) => SizedBox(
+                                height: mq.size.height * 0.3,
+                                child: const Center(
+                                  child: Icon(Icons.broken_image, size: 48),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          },
+        );
+      },
     );
   }
 }

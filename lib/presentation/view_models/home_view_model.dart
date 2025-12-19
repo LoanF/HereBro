@@ -6,13 +6,16 @@ import 'package:latlong2/latlong.dart';
 
 import '../../core/di.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/selfie_service.dart';
 import '../../data/enums/firestore_collection_enum.dart';
 import '../../data/models/friend_location_model.dart';
 import 'common_view_model.dart';
 
 class HomeViewModel extends CommonViewModel {
   final IAuthService _auth = getIt<IAuthService>();
+  final ISelfieService _selfie = getIt<ISelfieService>();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final double _desiredAccuracyMeters = 30.0;
 
   LatLng? _currentPosition;
 
@@ -29,6 +32,10 @@ class HomeViewModel extends CommonViewModel {
   StreamSubscription<QuerySnapshot>? _friendsListSubscription;
   StreamSubscription<ServiceStatus>? _serviceStatusSubscription;
   final List<StreamSubscription> _individualSubscriptions = [];
+
+  String? _warningMessage;
+
+  String? get warningMessage => _warningMessage;
 
   void init() {
     if (_gpsSubscription != null) return;
@@ -73,7 +80,6 @@ class HomeViewModel extends CommonViewModel {
       if (!serviceEnabled) {
         await Future.delayed(const Duration(milliseconds: 500));
         serviceEnabled = await Geolocator.isLocationServiceEnabled();
-
         if (!serviceEnabled) {
           errorMessage = "Le service de localisation est désactivé.";
           return;
@@ -95,8 +101,28 @@ class HomeViewModel extends CommonViewModel {
         return;
       }
 
-      Position? position = await Geolocator.getLastKnownPosition();
-      position ??= await Geolocator.getCurrentPosition();
+      // Request a high-precision single position first
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.bestForNavigation,
+          timeLimit: const Duration(seconds: 10),
+        );
+      } catch (_) {
+        // fallback to last known or less demanding call
+        position =
+            await Geolocator.getLastKnownPosition() ??
+            await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.high,
+            );
+      }
+
+      // Check precision: if accuracy is too large, prompt user to enable precise location
+      if (position.accuracy > _desiredAccuracyMeters) {
+        _warningMessage =
+            "Loc approximative (${position.accuracy.toStringAsFixed(0)} m)";
+        notifyListeners();
+      }
 
       _currentPosition = LatLng(position.latitude, position.longitude);
 
@@ -117,11 +143,18 @@ class HomeViewModel extends CommonViewModel {
       _gpsSubscription =
           Geolocator.getPositionStream(
             locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.high,
+              accuracy: LocationAccuracy.bestForNavigation,
               distanceFilter: 2,
             ),
           ).listen(
-            (Position newPos) {
+            (Position newPos) async {
+              // check stream positions accuracy too
+              if (newPos.accuracy > _desiredAccuracyMeters) {
+                _warningMessage =
+                    "Loc approximative (${newPos.accuracy.toStringAsFixed(0)} m)";
+                notifyListeners();
+              }
+
               _currentPosition = LatLng(newPos.latitude, newPos.longitude);
               errorMessage = null;
 
@@ -147,15 +180,12 @@ class HomeViewModel extends CommonViewModel {
             },
             onError: (Object error) {
               errorMessage = "Signal GPS perdu ou interrompu.";
-              isLoading = false;
-
               Future.delayed(const Duration(seconds: 5), () => retryLocation());
             },
             cancelOnError: false,
           );
     } catch (e) {
       errorMessage = "Erreur GPS: $e";
-      isLoading = false;
     }
   }
 
@@ -168,12 +198,23 @@ class HomeViewModel extends CommonViewModel {
         .doc(user.uid)
         .collection(FirestoreCollection.tracking.value)
         .snapshots()
-        .listen((snapshot) {
+        .listen((snapshot) async {
+          for (var sub in _individualSubscriptions) {
+            await sub.cancel();
+          }
+          _individualSubscriptions.clear();
+          _friendsData.clear();
+          notifyListeners();
           for (var doc in snapshot.docs) {
             final friendData = doc.data();
             final friendUid = friendData['uid'];
 
             if (_friendsData.containsKey(friendUid)) continue;
+
+            final String? selfieUrl = await _selfie.getSelfieUrl(
+              friendUid,
+              user.uid,
+            );
 
             final sub = _firestore
                 .collection(FirestoreCollection.users.value)
@@ -189,8 +230,10 @@ class HomeViewModel extends CommonViewModel {
                     _friendsData[friendUid] = FriendLocation(
                       uid: friendUid,
                       position: LatLng(pos['lat'], pos['lng']),
-                      displayName: userData['displayName'] ?? 'Ami',
-                      photoURL: userData['photoURL'],
+                      displayName: userData['displayName'] ?? 'Contact',
+                      email: userData['email'] ?? '',
+                      photoUrl: userData['photoURL'],
+                      selfieUrl: selfieUrl,
                     );
 
                     notifyListeners();

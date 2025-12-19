@@ -1,1 +1,38 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"herebro-app","appId":"1:479870007818:android:a1c56988f4d8a31f16fdf3","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"herebro-app","configurations":{"android":"1:479870007818:android:a1c56988f4d8a31f16fdf3","ios":"1:479870007818:ios:de91b2d2dd56634b16fdf3"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "herebro-app",
+          "appId": "1:479870007818:android:a1c56988f4d8a31f16fdf3",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "herebro-app",
+          "configurations": {
+            "android": "1:479870007818:android:a1c56988f4d8a31f16fdf3",
+            "ios": "1:479870007818:ios:de91b2d2dd56634b16fdf3"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ]
+}

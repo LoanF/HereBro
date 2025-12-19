@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/routes/app_routes.dart';
+import '../../core/themes/app_colors.dart';
 import '../view_models/auth_view_model.dart';
 import '../view_models/home_view_model.dart';
 
@@ -53,7 +54,15 @@ class _SettingsPageState extends State<SettingsPage> {
     final user = viewModel.currentUser;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Mon Profil"), centerTitle: true),
+      appBar: AppBar(
+        title: const Text("Mon profil"),
+        actions: [
+          IconButton(
+            onPressed: () => _showConfirmDelete(context, viewModel),
+            icon: const Icon(Icons.delete_outline, color: AppColors.error),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -86,8 +95,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
+            const SizedBox(height: 48),
             TextField(
               controller: _emailController,
               enabled: false,
@@ -211,6 +219,52 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showConfirmDelete(BuildContext context, AuthViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirmer la suppression"),
+        content: const Text(
+          "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: viewModel.isLoading
+                ? null
+                : () => Navigator.pop(context),
+            child: const Text("Annuler"),
+          ),
+          TextButton(
+            onPressed: viewModel.isLoading
+                ? null
+                : () async {
+                    await viewModel.deleteAccount();
+                    if (context.mounted) {
+                      if (viewModel.errorMessage != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(viewModel.errorMessage!)),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Suppression du compte avec succès"),
+                          ),
+                        );
+                      }
+                      Navigator.pop(context);
+                      context.go(AppRoutes.login);
+                    }
+                  },
+            child: Text(
+              viewModel.isLoading ? "Suppression" : "Supprimer",
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
       ),
     );
   }

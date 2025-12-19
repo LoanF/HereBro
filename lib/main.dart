@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'core/di.dart';
 import 'core/routes/app_router.dart';
+import 'core/services/notification_service.dart';
 import 'core/themes/app_theme.dart';
 import 'firebase_options.dart';
 import 'presentation/view_models/auth_view_model.dart';
@@ -25,8 +26,6 @@ void main() async {
     badge: true,
     sound: true,
   );
-
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   configureDependencies();
 
   runApp(
